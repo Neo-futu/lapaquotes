@@ -1,199 +1,137 @@
-<img width="128" alt="Lapa Logo" src="https://github.com/alexichepura/lapa/assets/5582266/d13a532e-dd04-48a5-af49-d5f8e9e75c6e">
+# LapaQuotes
 
-# Lapa - Leptos Axum starter with Admin dashboard and SSR/SPA website
+OTC 报价平台：多机构 / 多期限 / 多币种的**存款与债券**日报价终端，配套 Admin、AI Agent，以及飞书多维表格 BI 同步。
 
-## Status
-This project is under active development.\
-Recently migrated from Prisma ORM to SQL first approach with [Cornucopia](https://github.com/cornucopia-rs/cornucopia).\
-Also added integration with Slate.js for rich text editor because we don't have a good one in Rust yet.\
+基于 Rust（Leptos + Axum）与 PostgreSQL（Cornucopia SQL-first）。仓库：[`Neo-futu/lapaquotes`](https://github.com/Neo-futu/lapaquotes)。
 
----
+## 能力概览
 
-Intro: <https://youtu.be/6eMWAI1D-XA> \
-Demo site: <https://lapa.chepura.space>
+| 模块 | 说明 |
+|------|------|
+| **前台 site** | `/` 报价终端（Deposits / Bonds）、日期与机构筛选、最优 Bid/Ask 高亮 |
+| **Admin** | 机构、存款/债券报价 CRUDL；文章/产品/设置（模板能力仍保留） |
+| **Agent** | Rig 多模型对话；报价查询 tools；飞书 / WhatsApp 渠道 |
+| **BI → 飞书** | 平台库 → `BiQuoteFact` → OTC报价台账 / 推送表 / 仪表盘视图 |
 
----
-Screenshots below are outdated and to be updated.
+多币种（USD / CNY / HKD / EUR）、资产类别（存款 / 债券）为一级维度。
 
-<img width="360" alt="Site Home" src="https://github.com/alexichepura/lapa/assets/5582266/66326ce4-c61c-4fcc-a9f3-1f0548bb8c60">
-<img width="360" alt="Site Home" src="https://github.com/alexichepura/lapa/assets/5582266/4a0f0d99-fd95-4abe-84bb-30e43c9aeeaa">
+## 文档
 
-<img width="360" alt="Admin Dashboard" src="https://github.com/alexichepura/lapa/assets/5582266/cfb71304-9fdf-45c1-bd94-85ec90f07a0f">
-<img width="360" alt="Admin Posts" src="https://github.com/alexichepura/lapa/assets/5582266/7f0219cf-f231-4559-bffe-faec6e7b9285">
-<img width="360" alt="Admin Post" src="https://github.com/alexichepura/lapa/assets/5582266/d7ce5c3e-3686-4d41-9da3-e898ef7d2cad">
-<img width="360" alt="Admin Post" src="https://github.com/alexichepura/lapa/assets/5582266/3f08bf40-9c80-4b6a-8a5b-b9b2b8732066">
-<img width="360" alt="Admin Settings" src="https://github.com/alexichepura/lapa/assets/5582266/b2913992-bfb2-4454-83f3-f526a73fbb49">
-<img width="90" alt="Admin Mobile" src="https://github.com/alexichepura/lapa/assets/5582266/96f10565-19da-4b8e-80c0-6125bb5a97ac">
+| 文档 | 内容 |
+|------|------|
+| [doc/bi.md](doc/bi.md) | **飞书 BI 架构与每日同步**（必读） |
+| [doc/agent.md](doc/agent.md) | Agent API、渠道、环境变量 |
+| [doc/ingestion.md](doc/ingestion.md) | 邮件入库与幂等 upsert 约定 |
+| [doc/architecture.md](doc/architecture.md) | Workspace 与数据流 |
+| [doc/features.md](doc/features.md) | 功能清单 |
+| [doc/tech-stack.md](doc/tech-stack.md) | 技术栈 |
 
-## Motivation
+## 仓库结构
 
-I want to have practical full-stack setup to build websites and services. \
-Utilising type safety and performance of Rust opens the door for new era of web dev, that is taking off. \
-Ecosystem and standardized approach is helpful to develop scalable and future-proof apps. \
-Some benefits:
-
-- strict types
-- enforced error and value management (Result and Option)
-- predictable performance (no garbage collector)
-- native performance
-- single bundler (cargo)
-- straight path to WebAssembly
-
-### Leptos
-
-<https://leptos.dev> \
-[leptos-rs/leptos](https://github.com/leptos-rs/leptos) \
-A cutting-edge, high-performance frontend framework SSR+SPA. Using reactive signals.
-
-### Axum
-
-[tokio-rs/axum](https://github.com/tokio-rs/axum) \
-Backend framework built with Tokio, Tower, and Hyper. Focuses on ergonomics and modularity.
-
-## Features
-
-- project
-  - SEO site
-  - admin dashboard
-  - CLI with clap: settings-init, user-add
-  - ops scripts: build, upload, run (site, admin, cli)
-- site
-  - SSR + SPA hydrated
-  - open graph meta tags
-- prod features
-  - ratelimit with [benwis/tower-governor](https://github.com/benwis/tower-governor)
-  - compression with tower-http/compression
-  - precompression with [ryanfowler/precompress](https://github.com/ryanfowler/precompress) see ./ops scripts
-- admin auth and session with
-  - axum_session [AscendingCreations/AxumSessions](https://github.com/AscendingCreations/AxumSessions)
-  - axum_session_auth [AscendingCreations/AxumSessionsAuth](https://github.com/AscendingCreations/AxumSessionsAuth)
-- rich text content editor integration with [ianstormtaylor/slatejs](https://github.com/ianstormtaylor/slate) 
-- post
-  - CRUDL
-  - publish_at
-- product
-  - CRUDL
-  - publish_at
-  - product images
-    - preview and upload
-    - resize and convert on backend
-    - order
-    - is_hero flag
-    - delete and alt update in "dialog"
-- quotes (OTC deposit & bond daily quotes, see doc/ingestion.md)
-  - site /quotes: deposits/bonds tabs, date and institution filters
-  - admin: institutions + deposit/bond quote CRUDL with filters
-  - agent: quote-aware chat tools
-- settings
-  - robots.txt, site_url
-  - home_text
-- css
-  - based on <https://open-props.style>
-  - dark and light themes
-  - mobile first
-  - sass, @custom-media, @container, see notes on css below
-- components
-  - forms, inputs and response messages
-  - input datetime-local usage with chrono library
-  - RoutingProgress
-  - Favicons
-
-## Run
-
-### Generate db client
-https://cornucopia-rs.github.io/cornucopia/introduction/installation.html \
-Note the need of docker or podman.
-```sh
-cargo install cornucopia
-cornucopia schema ./schema.sql
+```text
+site (根包)     前台 :4141
+admin/          后台 :4143
+agent/          AI + BI（可挂 site 或独立 :4151）
+cli/            settings-init / user-add
+cornucopia/     生成的 DB 客户端
+queries/        手写 SQL
+schema.sql      表结构（含 DepositQuote / BondQuote / Bi*）
+scripts/bi/     飞书日更 Python
+doc/            设计与运维文档
+commit.py       一键 add / commit / push（Neo-futu）
 ```
 
-### Build rich text editor
+## 快速开始
 
-```sh
-cd slate && npm run build && cd -
+### 1. 环境
+
+- Rust（见 `rust-toolchain.toml`）、PostgreSQL
+- 复制环境变量：`.env.example` → `.env`（**勿提交** `.env`）
+
+```env
+PG__URL=postgresql://postgres:postgres@127.0.0.1:5432/lapa
 ```
 
-### Local DB
+### 2. 数据库
 
-Simplified with postgres user.
 ```sh
-psql postgres
-# create database lapa;
-psql -h 127.0.0.1 -U postgres -p 5432 -d lapa < "schema.sql"
-# .env
-PG__URL="postgresql://postgres:postgres@localhost:5432/lapa"
+# Windows
+./scripts/db/init-db.ps1
+# 或
+psql -h 127.0.0.1 -U postgres -d lapa -f schema.sql
 ```
 
-### Init
+多币种迁移（若库已有旧唯一键）：
 
 ```sh
-RUST_LOG="debug" cargo cli settings-init
-RUST_LOG="debug" cargo cli user-add
+psql ... -f scripts/db/05_multi_currency.sql
 ```
 
-### Dev
+### 3. 初始化
 
 ```sh
-RUST_LOG="info,admin=debug" cargo leptos watch -p admin
-RUST_LOG="info,site=debug" cargo leptos watch -p site
+cargo run -p cli -- settings-init
+cargo run -p cli -- user-add
 ```
 
-Or launch both at once (Windows; prepends `%USERPROFILE%\.cargo\bin` to PATH and sets RUST_LOG):
+### 4. 本地开发
 
 ```sh
-python scripts/dev.py            # watch mode: site :4141 + admin :4143
-python scripts/dev.py --serve    # no hot reload
+python scripts/dev.py            # site :4141 + admin :4143（watch）
 python scripts/dev.py --only site
 ```
-Tip to enable tower_http debug
+
+或：
+
 ```sh
-RUST_LOG="info,tower_http=debug,admin=debug" cargo leptos watch -p admin
-RUST_LOG="info,tower_http=debug,site=debug" cargo leptos watch -p site
+cargo leptos watch -p site
+cargo leptos watch -p admin
 ```
 
-### Prod
-
-See relevant tutorial and demo project.
-<https://github.com/alexichepura/leptos_axum_prisma_sozu>
-<https://www.youtube.com/watch?v=KLg8Hcd3K_U>
+富文本编辑器（Admin 需要时）：
 
 ```sh
-cargo leptos build --release
+cd slate && npm i && npm run build && cd ..
 ```
 
-Production with compress and ratelimit
+## 飞书 BI 同步
 
-```sh
-cargo leptos build --release --features="compression,ratelimit"
-# or
-cargo leptos build --release --features="prod"
-```
+完整说明见 **[doc/bi.md](doc/bi.md)**。
 
-### Ops
+`.env` 仅需：
 
-./ops folder contains example scripts to prepare production build and deploy it on server.
-Check .env.example
-Requires <https://github.com/ryanfowler/precompress>
-
-```sh
-./ops/site-deploy.sh && ./ops/site-run.sh # build, deploy and run site
-./ops/admin-deploy.sh && ./ops/admin-run.sh # build, deploy and run admin
+```env
+FEISHU_BITABLE_ACCESS_TOKEN=pt-...
+FEISHU_BITABLE_APP_TOKEN=...
+FEISHU_BITABLE_API_BASE=https://base-api.feishu.cn
 ```
 
 ```sh
-./ops/cli-deploy.sh # upload cli to server
+# 应用 BI 表
+python scripts/bi/apply_schema.py
+
+# 每日同步（最新报价日，或指定日期）
+python scripts/bi/daily_sync.py
+python scripts/bi/daily_sync.py 2026-10-08
+
+# 或 CLI
+cargo run -p agent --example bi_sync --features standalone -- daily
+cargo run -p agent --example bi_sync --features standalone -- sync 2026-10-08
+cargo run -p agent --example bi_sync --features standalone -- views 2026-10-08
 ```
 
-## Notes on CSS
+## Git（Neo-futu）
 
-Modern CSS is quite cool. Nesting, custom media, container queries. All that was used here before, but required cargo-leptos fork. As well another cli step to bundle everything into one css. For now returning to SASS.
-Considering return back to CSS if/when cargo-leptos will support lightningcss config and bundling.
+本仓 local 身份为 Neo-futu；`origin` 使用 SSH Host `github-neo`（勿与 zhairen 的 `github.com` 混淆）。
 
-Sass PR <https://github.com/alexichepura/lapa/pull/24>.
-Ligntningcss bundle with cli proof of concept <https://github.com/alexichepura/lapa/pull/23>.
+```sh
+python commit.py "你的 commit message"
+```
+
+## 上游说明
+
+前端/Admin 骨架源自 [alexichepura/lapa](https://github.com/alexichepura/lapa)（Leptos + Axum starter）。本仓库在此之上发展为 **OTC 报价 + Agent + 飞书 BI** 产品线，以本文档与 `doc/` 为准。
 
 ## License
 
-This project is licensed under the terms of the
-[MIT license](/LICENSE-MIT).
+[MIT](LICENSE-MIT)
