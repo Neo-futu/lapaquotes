@@ -128,10 +128,6 @@ cargo run -p agent --example bi_sync --features standalone -- views 2026-10-08
 python commit.py "你的 commit message"
 ```
 
-## 上游说明
-
-前端/Admin 骨架源自 [alexichepura/lapa](https://github.com/alexichepura/lapa)（Leptos + Axum starter）。本仓库在此之上发展为 **OTC 报价 + Agent + 飞书 BI** 产品线，以本文档与 `doc/` 为准。
-
 ## License
 
 [MIT](LICENSE-MIT)
