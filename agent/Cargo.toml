@@ -1,0 +1,51 @@
+[package]
+name = "agent"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "AI-native agent layer powered by Rig (LLM) + Cornucopia (Post/Content)"
+
+[[bin]]
+name = "agent"
+path = "src/bin/agent.rs"
+required-features = ["standalone"]
+
+[features]
+default = ["server"]
+server = []
+# Optional: enable Rig MCP client (`rig` feature `rmcp` / crate `rig-rmcp`).
+# Feishu bots do NOT need this — use channels::feishu instead.
+mcp = ["rig/rmcp"]
+standalone = [
+    "server",
+    "dep:config",
+    "dep:tracing-subscriber",
+    "dep:tower-http",
+    "tokio/rt-multi-thread",
+]
+
+[[example]]
+name = "bi_sync"
+required-features = ["standalone"]
+
+[dependencies]
+axum = { workspace = true }
+chrono = { workspace = true }
+config = { workspace = true, optional = true }
+content.workspace = true
+cornucopia.workspace = true
+cuid2 = { workspace = true }
+deadpool-postgres.workspace = true
+dotenvy = { workspace = true }
+# Rig facade: agent runtime + OpenAI provider (reads OPENAI_API_KEY)
+# Enable MCP with: cargo check -p agent --features mcp
+rig = { version = "0.43", default-features = true }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+rust_decimal = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["time", "rt-multi-thread", "macros"] }
+tower-http = { workspace = true, features = ["cors", "trace"], optional = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, optional = true }

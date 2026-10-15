@@ -1,0 +1,23 @@
+[package]
+name = "lib"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[features]
+all = ["leptos", "server"]
+default = []
+leptos = ["dep:leptos", "dep:http"]
+server = []
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+cfg-if = { workspace = true }
+http = { workspace = true, optional = true }
+leptos = { workspace = true, optional = true }
+# serde = { workspace = true }
+thiserror = { workspace = true }
+# tokio = { workspace = true }
+tracing = { workspace = true }

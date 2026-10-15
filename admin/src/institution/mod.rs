@@ -1,0 +1,16 @@
+mod institution_create;
+mod institution_delete;
+mod institution_error;
+mod institution_form;
+mod institution_header;
+mod institution_list;
+mod institution_page;
+mod institution_select;
+pub use institution_create::*;
+pub use institution_delete::*;
+pub use institution_error::*;
+pub use institution_form::*;
+pub use institution_header::*;
+pub use institution_list::*;
+pub use institution_page::*;
+pub use institution_select::*;

@@ -1,0 +1,1146 @@
+@use "./open-props.min.css";
+@use "./normalize.min.css";
+@use "./buttons.min.css";
+
+// @custom-media --md-n-above (width >=768px);
+// @custom-media --sm-n-above (width >=480px);
+$sm-n-above: 480px;
+
+:root {
+	/* Stable app shell: header + main share the same width on every route. */
+	--shell-width: min(100% - 2rem, 84rem);
+	--inner-width: var(--shell-width);
+}
+
+body {
+	font-family: var(--font-sans);
+
+	>header {
+		background: var(--surface-2);
+		box-shadow: var(--shadow-3);
+
+		>section {
+			height: var(--size-fluid-4);
+			padding: 0;
+			width: var(--shell-width);
+			margin-inline: auto;
+			display: flex;
+			align-items: stretch;
+			gap: 0;
+		}
+
+		& a {
+			text-decoration: none;
+			padding-inline: var(--size-relative-6);
+			padding-block: 0;
+			display: block;
+			margin: 0;
+			display: flex;
+			align-items: center;
+
+			&:visited {
+				color: var(--text-1);
+			}
+
+			&:is(:hover, :focus) {
+				background: var(--surface-4);
+			}
+
+			&[aria-current] {
+				background: var(--surface-3);
+			}
+		}
+	}
+}
+
+main {
+	padding-block: var(--size-fluid-2);
+	width: var(--shell-width);
+	margin-inline: auto;
+	/* Do not change width/padding per route — only page content inside changes. */
+
+	&:has(> .GptChat) {
+		/* Chat uses same shell; keep vertical room for the conversation panel. */
+		padding-block: var(--size-3);
+	}
+}
+
+section {
+	padding: var(--size-fluid-1);
+}
+
+p {
+	text-indent: 1rem;
+	max-inline-size: var(--size-content-4);
+}
+
+h1 {
+	font-size: var(--font-size-4);
+	margin-block-end: 1rem;
+}
+
+h2 {
+	font-size: var(--font-size-3);
+	margin-block-end: 1rem;
+}
+
+hr {
+	margin-block: var(--size-fluid-2);
+}
+
+figure {
+	justify-items: center;
+	align-items: start;
+}
+
+dialog {
+	max-inline-size: var(--size-content-4);
+	padding: calc(var(--size-fluid-1)/2);
+	border-radius: var(--radius-2);
+	max-height: 100vh;
+
+	&:not([open]) {
+		padding: 0;
+		display: none;
+	}
+
+	& figure {
+		grid-template-areas: "img" "text" "btn";
+
+		@media (min-width: #{$sm-n-above}) {
+			grid-template-areas: "img img" "text btn";
+		}
+	}
+
+	& img {
+		grid-area: img;
+		width: auto;
+		border-radius: var(--radius-2);
+	}
+
+	& figcaption {
+		grid-area: text;
+	}
+
+	& button {
+		grid-area: btn;
+
+		@media (min-width: #{$sm-n-above}) {
+			justify-self: end;
+		}
+	}
+}
+
+
+
+/* HOME PAGE */
+#ava {
+	width: 200px;
+	height: 200px;
+	border-radius: 50%;
+	margin-top: var(--size-fluid-2);
+	margin-inline: auto;
+}
+
+.ProductList {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, 240px);
+	gap: var(--size-fluid-2) var(--size-fluid-1);
+	justify-content: space-around;
+
+	& a {
+		text-decoration: none;
+		overflow: hidden;
+		box-shadow: var(--shadow-3);
+
+		/* transition: transform 0.3s ease; */
+		transition-property: transform, box-shadow;
+		transition-duration: 0.3s;
+		transition-timing-function: ease;
+
+		&:visited {
+			color: var(--text-1);
+		}
+
+		&:hover {
+			transform: scale(1.03);
+			box-shadow: var(--shadow-4);
+		}
+
+		>img {
+			border-radius: var(--radius-2);
+		}
+
+		>p {
+			padding-block: calc(var(--size-fluid-1)/2);
+		}
+	}
+}
+
+.product-images {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, 240px);
+	gap: var(--size-fluid-2) var(--size-fluid-1);
+	justify-content: space-around;
+
+	& img {
+		/* background: var(--surface-2); */
+		border-radius: var(--radius-2);
+		overflow: hidden;
+		cursor: pointer;
+		box-shadow: var(--shadow-3);
+		transition-property: transform, box-shadow;
+		transition-duration: 0.3s;
+		transition-timing-function: ease;
+
+		&:hover {
+			transform: scale(1.03);
+			box-shadow: var(--shadow-4);
+		}
+	}
+}
+
+/* CHAT — ChatGPT-like conversation surface (same shell width as Quotes) */
+.GptChat {
+	--gpt-rail: min(48rem, 100%);
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	min-height: min(70dvh, 44rem);
+	max-block-size: calc(100dvh - 7rem);
+	padding: 0;
+	background: var(--surface-1);
+	border: 1px solid var(--surface-3);
+	border-radius: var(--radius-3);
+	overflow: hidden;
+}
+
+.GptChat-top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--size-3);
+	padding: var(--size-3) var(--size-4);
+	border-block-end: 1px solid var(--surface-3);
+	background: var(--surface-1);
+}
+
+.GptChat-topLeft {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--size-2);
+	min-width: 0;
+}
+
+.GptChat-select {
+	font: inherit;
+	font-size: var(--font-size-0);
+	padding: var(--size-1) var(--size-3);
+	border: 1px solid var(--surface-4);
+	border-radius: 999px;
+	background: var(--surface-2);
+	color: var(--text-1);
+	max-inline-size: 100%;
+	cursor: pointer;
+
+	&:disabled {
+		opacity: 0.5;
+	}
+}
+
+.GptChat-new {
+	font: inherit;
+	font-size: var(--font-size-0);
+	padding: var(--size-1) var(--size-3);
+	border: 1px solid var(--surface-4);
+	border-radius: 999px;
+	background: transparent;
+	color: var(--text-2);
+	cursor: pointer;
+	white-space: nowrap;
+
+	&:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	&:not(:disabled):hover {
+		background: var(--surface-2);
+		color: var(--text-1);
+	}
+}
+
+.GptChat-scroll {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	scroll-behavior: smooth;
+}
+
+.GptChat-inner {
+	width: var(--gpt-rail);
+	margin-inline: auto;
+	padding: var(--size-5) var(--size-4);
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-5);
+}
+
+.GptChat-hero {
+	margin: auto;
+	padding-block: var(--size-8) var(--size-5);
+	text-align: center;
+	display: grid;
+	gap: var(--size-3);
+	justify-items: center;
+
+	h1 {
+		margin: 0;
+		font-size: clamp(1.6rem, 3vw, 2rem);
+		font-weight: 600;
+		letter-spacing: -0.02em;
+	}
+}
+
+.GptChat-heroSub {
+	margin: 0;
+	text-indent: 0;
+	color: var(--text-2);
+	max-inline-size: 36rem;
+	font-size: var(--font-size-1);
+	line-height: 1.5;
+}
+
+.GptChat-prompts {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+	gap: var(--size-2);
+	width: min(40rem, 100%);
+	margin-block-start: var(--size-3);
+}
+
+.GptChat-prompt {
+	font: inherit;
+	font-size: var(--font-size-0);
+	text-align: start;
+	padding: var(--size-3);
+	border: 1px solid var(--surface-3);
+	border-radius: var(--radius-3);
+	background: var(--surface-2);
+	color: var(--text-1);
+	cursor: pointer;
+	line-height: 1.4;
+
+	&:hover {
+		background: var(--surface-3);
+	}
+}
+
+.GptChat-msg {
+	width: 100%;
+}
+
+.GptChat-msgInner {
+	display: flex;
+	gap: var(--size-3);
+	align-items: flex-start;
+}
+
+.GptChat-msg--user .GptChat-msgInner {
+	justify-content: flex-end;
+}
+
+.GptChat-icon {
+	flex-shrink: 0;
+	inline-size: 1.75rem;
+	block-size: 1.75rem;
+	border-radius: var(--radius-round);
+	display: grid;
+	place-items: center;
+	background: var(--surface-3);
+	color: var(--text-1);
+	font-size: 0.75rem;
+	margin-block-start: 0.15rem;
+}
+
+.GptChat-text {
+	white-space: pre-wrap;
+	line-height: 1.65;
+	text-indent: 0;
+	font-size: var(--font-size-1);
+	max-inline-size: 100%;
+}
+
+.GptChat-msg--user .GptChat-text {
+	background: var(--surface-3);
+	padding: var(--size-3) var(--size-4);
+	border-radius: 1.25rem;
+	max-inline-size: min(36rem, 85%);
+}
+
+.GptChat-msg--assistant .GptChat-text {
+	padding-block: 0.15rem;
+	flex: 1;
+	min-width: 0;
+}
+
+.GptChat-thinking {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	padding-block: 0.5rem;
+
+	span {
+		inline-size: 0.4rem;
+		block-size: 0.4rem;
+		border-radius: var(--radius-round);
+		background: var(--text-2);
+		animation: chat-dot 1.2s ease-in-out infinite;
+
+		&:nth-child(2) {
+			animation-delay: 0.15s;
+		}
+
+		&:nth-child(3) {
+			animation-delay: 0.3s;
+		}
+	}
+}
+
+@keyframes chat-dot {
+	0%,
+	80%,
+	100% {
+		opacity: 0.35;
+		transform: translateY(0);
+	}
+
+	40% {
+		opacity: 1;
+		transform: translateY(-0.15rem);
+	}
+}
+
+.GptChat-bottom {
+	border-block-start: 1px solid var(--surface-3);
+	background: linear-gradient(to top, var(--surface-1) 70%, transparent);
+	padding: var(--size-3) var(--size-4) var(--size-4);
+}
+
+.GptChat-bottomInner {
+	width: var(--gpt-rail);
+	margin-inline: auto;
+	display: grid;
+	gap: var(--size-2);
+}
+
+.GptChat-meta,
+.GptChat-footnote {
+	margin: 0;
+	text-indent: 0;
+	text-align: center;
+	font-size: var(--font-size-0);
+	color: var(--text-2);
+	max-inline-size: none;
+}
+
+.GptChat-form {
+	display: flex;
+	align-items: flex-end;
+	gap: var(--size-2);
+	padding: var(--size-2) var(--size-2) var(--size-2) var(--size-4);
+	border: 1px solid var(--surface-4);
+	border-radius: 1.5rem;
+	background: var(--surface-2);
+	box-shadow: var(--shadow-2);
+
+	&:focus-within {
+		border-color: var(--text-2);
+	}
+}
+
+.GptChat-input {
+	flex: 1;
+	min-inline-size: 0;
+	font: inherit;
+	font-size: var(--font-size-1);
+	padding: var(--size-2) 0;
+	border: 0;
+	background: transparent;
+	color: var(--text-1);
+	resize: none;
+	min-height: 1.5rem;
+	max-height: 10rem;
+	line-height: 1.5;
+
+	&:focus {
+		outline: none;
+	}
+
+	&:disabled {
+		opacity: 0.55;
+	}
+}
+
+.GptChat-send {
+	flex-shrink: 0;
+	inline-size: 2.25rem;
+	block-size: 2.25rem;
+	border: 0;
+	border-radius: var(--radius-round);
+	background: var(--text-1);
+	color: var(--surface-1);
+	font: inherit;
+	font-size: 1.1rem;
+	line-height: 1;
+	cursor: pointer;
+	display: grid;
+	place-items: center;
+
+	&:disabled {
+		opacity: 0.35;
+		cursor: not-allowed;
+	}
+
+	&:not(:disabled):hover {
+		filter: brightness(1.08);
+	}
+}
+
+/* BRAND — header logo */
+header .Brand {
+	margin-inline-end: auto;
+	padding-inline: var(--size-3);
+	display: flex;
+	align-items: stretch;
+
+	a {
+		display: flex;
+		align-items: center;
+		padding: 0 !important;
+	}
+
+	img {
+		display: block;
+		height: 2.6rem;
+		width: auto;
+		max-width: 12rem;
+		object-fit: contain;
+	}
+}
+
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	border: 0;
+}
+
+
+
+/* QUOTES — Bloomberg-terminal: compact-bright, wide but not overflowing */
+.Quotes {
+	--term-bg: #11151f;
+	--term-panel: #1a2030;
+	--term-panel-2: #212940;
+	--term-line: #36405a;
+	--term-text: #e8ecf5;
+	--term-text-2: #aab3cc;
+	--term-amber: #ffc340;
+	--term-green: #5ae099;
+	--term-green-bg: rgba(90, 224, 153, 0.13);
+	--term-red: #ff6b6b;
+	--term-red-bg: rgba(255, 107, 107, 0.13);
+	--term-amber-bg: rgba(255, 195, 64, 0.15);
+	--term-cyan: #66d4ff;
+	--term-cyan-bg: rgba(102, 212, 255, 0.1);
+
+	display: grid;
+	gap: var(--size-3);
+	font-size: var(--font-size-1);
+}
+
+.Quotes-header h1 {
+	margin-block-end: 0.25rem;
+	font-size: var(--font-size-4);
+	font-weight: 800;
+	letter-spacing: 0.04em;
+	color: var(--term-text);
+}
+
+.Quotes-h1-accent { color: var(--term-amber); }
+
+.Quotes-lead {
+	text-indent: 0;
+	color: var(--term-text-2);
+	margin: 0;
+	font-size: var(--font-size-1);
+}
+
+/* Left: deposits/bonds workspace. Right: independent HK calendar column. */
+.Quotes-body {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(15rem, 17.5rem);
+	gap: var(--size-4);
+	align-items: start;
+}
+
+.Quotes-main {
+	display: grid;
+	gap: var(--size-3);
+	min-width: 0;
+}
+
+.Quotes-aside {
+	position: sticky;
+	top: var(--size-3);
+	justify-self: end;
+	width: 100%;
+}
+
+.Quotes-tabs {
+	display: flex;
+	gap: 1px;
+	background: var(--term-line);
+	border: 1px solid var(--term-line);
+	align-items: stretch;
+}
+
+@media (max-width: 56rem) {
+	.Quotes-body {
+		grid-template-columns: 1fr;
+	}
+
+	.Quotes-aside {
+		position: static;
+		order: -1;
+		justify-self: stretch;
+		max-width: 17.5rem;
+		margin-inline-start: auto;
+	}
+}
+
+/* ---- HK holiday calendar (Outlook-like mini month) ---- */
+.HkCal {
+	width: 100%;
+}
+
+.HkCal-card {
+	border: 1px solid var(--term-line);
+	background: var(--term-panel);
+	padding: var(--size-2);
+	display: grid;
+	gap: var(--size-2);
+}
+
+.HkCal-loading {
+	margin: 0;
+	padding: var(--size-3);
+	color: var(--term-text-2);
+	text-align: center;
+}
+
+.HkCal-head {
+	display: grid;
+	gap: var(--size-1);
+}
+
+.HkCal-title-row {
+	display: flex;
+	align-items: center;
+	gap: var(--size-1);
+}
+
+.HkCal-badge {
+	font-size: var(--font-size-0);
+	font-weight: 800;
+	letter-spacing: 0.08em;
+	color: var(--term-bg);
+	background: var(--term-amber);
+	padding: 1px 5px;
+}
+
+.HkCal-month {
+	flex: 1;
+	margin: 0;
+	text-align: center;
+	font-size: var(--font-size-0);
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	color: var(--term-text);
+}
+
+.HkCal-nav,
+.HkCal-today-btn {
+	font: inherit;
+	font-size: var(--font-size-0);
+	font-weight: 700;
+	border: 1px solid var(--term-line);
+	background: var(--term-bg);
+	color: var(--term-text-2);
+	cursor: pointer;
+	padding: 2px 8px;
+	border-radius: 0;
+}
+
+.HkCal-nav:hover,
+.HkCal-today-btn:hover {
+	color: var(--term-amber);
+	border-color: var(--term-amber);
+}
+
+.HkCal-today-btn {
+	width: 100%;
+	letter-spacing: 0.06em;
+}
+
+.HkCal-weekdays {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 1px;
+	text-align: center;
+	font-size: 0.65rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	color: var(--term-text-2);
+	text-transform: uppercase;
+}
+
+.HkCal-grid {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 1px;
+	background: var(--term-line);
+	border: 1px solid var(--term-line);
+}
+
+.HkCal-cell {
+	position: relative;
+	display: grid;
+	place-items: center;
+	aspect-ratio: 1;
+	min-height: 1.7rem;
+	border: 0;
+	border-radius: 0;
+	background: var(--term-bg);
+	color: var(--term-text);
+	font: inherit;
+	font-size: var(--font-size-0);
+	font-variant-numeric: tabular-nums;
+	cursor: pointer;
+	padding: 0;
+
+	&--empty {
+		background: var(--term-panel);
+		cursor: default;
+	}
+
+	/* Weekend = non-working day: light wash (separate from public holidays). */
+	&--weekend {
+		color: var(--term-text-2);
+		background: rgba(140, 156, 196, 0.14);
+	}
+
+	&--holiday {
+		color: var(--term-red);
+		font-weight: 700;
+		background: var(--term-red-bg);
+	}
+
+	/* Holiday falling on a weekend: keep holiday red + slightly stronger wash */
+	&--weekend.HkCal-cell--holiday {
+		color: var(--term-red);
+		background: rgba(255, 107, 107, 0.2);
+	}
+
+	&--today {
+		box-shadow: inset 0 0 0 2px var(--term-cyan);
+	}
+
+	&--selected {
+		background: var(--term-amber);
+		color: var(--term-bg);
+		font-weight: 800;
+
+		&.HkCal-cell--holiday,
+		&.HkCal-cell--weekend {
+			color: var(--term-bg);
+			background: var(--term-amber);
+		}
+	}
+
+	&:not(.HkCal-cell--empty):not(.HkCal-cell--selected):hover {
+		filter: brightness(1.12);
+	}
+
+	&--selected:hover {
+		background: var(--term-amber);
+	}
+}
+
+.HkCal-daynum {
+	line-height: 1;
+}
+
+.HkCal-dot {
+	position: absolute;
+	bottom: 2px;
+	width: 4px;
+	height: 4px;
+	border-radius: 0;
+	background: var(--term-red);
+}
+
+.HkCal-cell--selected .HkCal-dot {
+	background: var(--term-bg);
+}
+
+.HkCal-detail {
+	border-top: 1px solid var(--term-line);
+	padding-top: var(--size-2);
+	display: grid;
+	gap: 4px;
+	min-height: 3.2rem;
+}
+
+.HkCal-detail-date {
+	font-size: var(--font-size-0);
+	font-weight: 700;
+	color: var(--term-text);
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+}
+
+.HkCal-detail-holiday {
+	font-size: var(--font-size-0);
+	color: var(--term-red);
+	font-weight: 600;
+}
+
+.HkCal-detail-none {
+	font-size: var(--font-size-0);
+	color: var(--term-text-2);
+}
+
+.HkCal-pill {
+	display: inline-block;
+	padding: 0 5px;
+	font-size: 0.65rem;
+	font-weight: 800;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	background: var(--term-cyan);
+	color: var(--term-bg);
+
+	&--holiday {
+		background: var(--term-red);
+	}
+}
+
+.Quotes-tab {
+	font: inherit;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	font-size: var(--font-size-0);
+	padding: var(--size-2) var(--size-4);
+	border: 0;
+	border-radius: 0;
+	background: var(--term-panel);
+	color: var(--term-text-2);
+	cursor: pointer;
+
+	&:is(:hover, :focus) {
+		background: var(--term-panel-2);
+		color: var(--term-text);
+	}
+}
+
+.Quotes-tab--active {
+	background: var(--term-bg);
+	color: var(--term-amber);
+	box-shadow: inset 0 -3px 0 var(--term-amber);
+}
+
+.Quotes-filters {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: end;
+	gap: var(--size-3);
+	padding: var(--size-3) var(--size-4);
+	background: var(--term-panel);
+	border: 1px solid var(--term-line);
+}
+
+.Quotes-field {
+	display: grid;
+	gap: 3px;
+
+	span {
+		font-size: var(--font-size-0);
+		color: var(--term-amber);
+		letter-spacing: 0.1em;
+		font-weight: 700;
+	}
+
+	input,
+	select {
+		font: inherit;
+		font-size: var(--font-size-0);
+		padding: var(--size-2) var(--size-3);
+		border: 1px solid var(--term-line);
+		border-radius: 0;
+		background: var(--term-bg);
+		color: var(--term-text);
+		min-width: 13ch;
+	}
+
+	&--action {
+		align-self: end;
+	}
+}
+
+.Quotes-refresh {
+	font: inherit;
+	font-size: var(--font-size-0);
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	padding: var(--size-2) var(--size-3);
+	border: 1px solid var(--term-amber);
+	border-radius: 0;
+	background: transparent;
+	color: var(--term-amber);
+	cursor: pointer;
+
+	&:hover {
+		background: var(--term-amber);
+		color: var(--term-bg);
+	}
+}
+
+.Quotes-stats {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1px;
+	background: var(--term-line);
+	border: 1px solid var(--term-line);
+}
+
+.Quotes-stat {
+	flex: 1 1 9rem;
+	display: grid;
+	gap: 3px;
+	padding: var(--size-2) var(--size-4);
+	background: var(--term-panel);
+
+	&:first-child {
+		border-inline-start: 3px solid var(--term-amber);
+	}
+}
+
+.Quotes-stat-label {
+	font-size: var(--font-size-0);
+	letter-spacing: 0.1em;
+	color: var(--term-text-2);
+	font-weight: 700;
+}
+
+.Quotes-stat-value {
+	font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+	font-variant-numeric: tabular-nums;
+	color: var(--term-text);
+	font-size: var(--font-size-2);
+	font-weight: 700;
+}
+
+.Quotes-best {
+	display: grid;
+	gap: 1px;
+	background: var(--term-line);
+	border: 1px solid var(--term-line);
+}
+
+.Quotes-best-title {
+	padding: var(--size-2) var(--size-4);
+	background: var(--term-panel-2);
+	color: var(--term-text);
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	font-size: var(--font-size-1);
+	display: flex;
+	align-items: center;
+	gap: var(--size-2);
+}
+
+.Quotes-empty {
+	text-indent: 0;
+	color: var(--term-text-2);
+	margin: 0;
+	padding: var(--size-3);
+	font-size: var(--font-size-1);
+}
+
+.Quotes-table-wrap {
+	overflow-x: auto;
+	border: 1px solid var(--term-line);
+	background: var(--term-bg);
+}
+
+.Quotes-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+	font-variant-numeric: tabular-nums;
+	font-size: var(--font-size-0);
+
+	th,
+	td {
+		padding: var(--size-2) var(--size-3);
+		text-align: left;
+		border-block-end: 1px solid var(--term-line);
+		white-space: nowrap;
+		color: var(--term-text);
+	}
+
+	thead th {
+		background: var(--term-panel);
+		color: var(--term-amber);
+		font-size: var(--font-size-0);
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		position: sticky;
+		top: 0;
+		text-transform: uppercase;
+	}
+
+	thead tr.Quotes-thead-group th {
+		border-block-end: 1px solid var(--term-line);
+	}
+
+	thead .Quotes-grp {
+		text-align: center;
+
+		&.Quotes-grp--bid {
+			color: var(--term-green);
+			background: var(--term-green-bg);
+		}
+
+		&.Quotes-grp--ask {
+			color: var(--term-red);
+			background: var(--term-red-bg);
+		}
+
+		&.Quotes-grp--sprd {
+			color: var(--term-amber);
+			background: var(--term-amber-bg);
+		}
+	}
+
+	tbody tr:last-child td {
+		border-block-end: 0;
+	}
+
+	tbody tr:is(:hover, :focus) {
+		background: var(--term-panel-2);
+	}
+
+	td.num {
+		text-align: right;
+	}
+
+	td.Quotes-term {
+		color: var(--term-cyan);
+		font-weight: 700;
+		background: var(--term-cyan-bg);
+	}
+
+	/* Always-on rate colors (not only BEST rows) */
+	td.Quotes-bid {
+		color: var(--term-green);
+	}
+
+	td.Quotes-ask {
+		color: var(--term-red);
+	}
+
+	td.Quotes-mid {
+		color: var(--term-amber);
+	}
+
+	td.Quotes-sprd {
+		color: var(--term-amber);
+	}
+
+	td.Quotes-note {
+		color: var(--term-text-2);
+		white-space: normal;
+	}
+
+	td.Quotes-bester {
+		color: var(--term-text-2);
+	}
+
+	td.Quotes-best-bid {
+		color: var(--term-green);
+		background: var(--term-green-bg);
+		font-weight: 700;
+	}
+
+	td.Quotes-best-ask {
+		color: var(--term-red);
+		background: var(--term-red-bg);
+		font-weight: 700;
+	}
+
+	td.Quotes-best-sprd {
+		color: var(--term-amber);
+		background: var(--term-amber-bg);
+		font-weight: 700;
+	}
+
+	&.Quotes-table--best td {
+		font-size: var(--font-size-0);
+	}
+}
+
+.Quotes-sub {
+	margin-inline-start: var(--size-2);
+	font-size: var(--font-size-0);
+	color: var(--term-text-2);
+	letter-spacing: 0.04em;
+}
+
+.Quotes-legend {
+	text-indent: 0;
+	margin: 0;
+	padding: var(--size-2) var(--size-3);
+	color: var(--term-text-2);
+	font-size: var(--font-size-0);
+}
+
+.Quotes-tag {
+	display: inline-block;
+	padding: 1px var(--size-2);
+	font-size: var(--font-size-0);
+	font-weight: 700;
+	letter-spacing: 0.08em;
+}
+
+.Quotes-tag--best {
+	background: var(--term-amber);
+	color: var(--term-bg);
+}
+
+
+/* Native date input on the terminal theme: show the platform calendar picker icon */
+.Quotes-field input[type="date"] {
+	color-scheme: dark;
+	font-family: var(--font-mono, ui-monospace, "SF Mono", Menlo, monospace);
+	font-variant-numeric: tabular-nums;
+}
