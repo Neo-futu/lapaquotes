@@ -77,9 +77,16 @@ cargo run -p cli -- user-add
 ### 4. 本地开发
 
 ```sh
-python scripts/dev.py            # site :4141 + admin :4143（watch）
+# Outlook watch 注册到本项目（写入 scripts/ingest/watch_config.yaml；非 Windows 服务）
+python scripts/ingest/register_watch.py register
+python scripts/ingest/register_watch.py status
+
+python scripts/dev.py            # site :4141 + admin :4143；若已 register 则自动启动 Outlook watch
 python scripts/dev.py --only site
+python scripts/dev.py --no-outlook-watch
 ```
+
+默认监听 `0.0.0.0`（见根/`admin` `Cargo.toml` 的 `site-addr`），本机与局域网均可访问，例如 `http://127.0.0.1:4141/` 与 `http://172.21.55.8:4141/`。若局域网仍不通，在 Windows 防火墙放行 TCP 4141/4143。
 
 或：
 
@@ -118,6 +125,9 @@ python scripts/bi/daily_sync.py 2026-10-08
 cargo run -p agent --example bi_sync --features standalone -- daily
 cargo run -p agent --example bi_sync --features standalone -- sync 2026-10-08
 cargo run -p agent --example bi_sync --features standalone -- views 2026-10-08
+
+# Outlook 实时监测：新邮件 → ingest upsert → 飞书（独立进程，需本机 Outlook）
+python scripts/ingest/watch_outlook.py
 ```
 
 ## Git（Neo-futu）

@@ -158,21 +158,22 @@ async fn apply_view_filters(
     view_id: &str,
     idx: &FieldIndex,
     filters: &[EqFilter],
+    sort_by_term: bool,
 ) -> Result<(), String> {
     let conditions = build_conditions(idx, filters)?;
+    let mut property = json!({
+        "filter_info": {
+            "conjunction": "and",
+            "conditions": conditions
+        }
+    });
+    if sort_by_term {
+        if let Ok(fid) = idx.id("期限排序") {
+            property["sort_info"] = json!([{ "field_id": fid, "desc": false }]);
+        }
+    }
     client
-        .patch_view(
-            table_id,
-            view_id,
-            json!({
-                "property": {
-                    "filter_info": {
-                        "conjunction": "and",
-                        "conditions": conditions
-                    }
-                }
-            }),
-        )
+        .patch_view(table_id, view_id, json!({ "property": property }))
         .await
 }
 
@@ -336,7 +337,7 @@ pub async fn ensure_ledger_chart_views_for_date(
             ],
         ),
         (
-            "Acme 美元存款各期限",
+            "ABC HK 美元存款各期限",
             vec![
                 EqFilter::Select {
                     field: "类型",
@@ -344,7 +345,7 @@ pub async fn ensure_ledger_chart_views_for_date(
                 },
                 EqFilter::Text {
                     field: "机构",
-                    value: "Acme Bank".into(),
+                    value: "Agricultural Bank of China Hong Kong".into(),
                 },
                 EqFilter::Text {
                     field: "币种",
@@ -426,7 +427,7 @@ pub async fn ensure_ledger_chart_views_for_date(
             ],
         ));
         specs.push((
-            "最新日 Acme 美元存款",
+            "最新日 ABC HK 美元存款",
             vec![
                 EqFilter::Select {
                     field: "类型",
@@ -434,7 +435,7 @@ pub async fn ensure_ledger_chart_views_for_date(
                 },
                 EqFilter::Text {
                     field: "机构",
-                    value: "Acme Bank".into(),
+                    value: "Agricultural Bank of China Hong Kong".into(),
                 },
                 EqFilter::Text {
                     field: "币种",
@@ -482,7 +483,11 @@ pub async fn ensure_ledger_chart_views_for_date(
         if filters.is_empty() {
             continue;
         }
-        match apply_view_filters(client, table_id, &view_id, &idx, &filters).await {
+        // Deposit views: sort by numeric 期限排序 so O/N→1W→1M… (text「期限」 cannot).
+        let sort_by_term = name.contains("存款");
+        match apply_view_filters(client, table_id, &view_id, &idx, &filters, sort_by_term)
+            .await
+        {
             Ok(()) => {
                 updated_filters.push(name.to_string());
                 info!(view = name, %view_id, "ledger view filters applied");
@@ -516,7 +521,12 @@ fn classify_dashboard(block_id: &str, name: &str) -> &'static str {
 }
 
 fn dashboard_url(app_token: &str, block_id: &str) -> String {
-    format!("https://balancev.feishu.cn/base/{app_token}?table={block_id}")
+    let host = std::env::var("FEISHU_BITABLE_WEB_HOST")
+        .or_else(|_| std::env::var("FEISHU_WEB_HOST"))
+        .unwrap_or_else(|_| "https://futu.feishu.cn".into())
+        .trim_end_matches('/')
+        .to_string();
+    format!("{host}/base/{app_token}?table={block_id}")
 }
 
 fn date_to_ms(d: NaiveDate) -> i64 {

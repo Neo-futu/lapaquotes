@@ -4,6 +4,8 @@
 
 | 脚本 | 说明 |
 |------|------|
+| [`ingest/`](./ingest/) | Outlook `fixed income` 存款报价邮件 → `DepositQuote` |
+| [`bi/`](./bi/) | 飞书多维表格日更（`daily_sync.py`） |
 | [`db/`](./db/) | 创建 `lapa` 库、应用表结构（`init-db.ps1` / `init-db.sh`） |
 | `gen-db-client.sh` | 根据 `schema.sql` + `queries/` 生成 Cornucopia 客户端 |
 | `build-slate.sh` | 构建 Admin 富文本编辑器（Slate.js / rspack） |

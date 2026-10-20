@@ -2,14 +2,15 @@
 
 本文说明 **数据库表 → BI 层 → 飞书 Base（数据表 + 仪表盘）** 的架构、业务逻辑，以及 **每日如何更新**。
 
-相关 Base：[OTC价格台账](https://balancev.feishu.cn/base/O563bA6LkakSfmsTU0ScIWNFn3g)
+相关 Base（富途租户）：[OTC 多维表格](https://futu.feishu.cn/base/N4npbXv29ah1MUs0abycR3mtnnb)
 
 | 资源 | 说明 | 链接 |
 |------|------|------|
-| OTC报价台账 | 明细表（逐条存款/债券） | `table=tblxiDoHI6BN7PFK` |
-| 最新报价推送 | 摘要表（按机构聚合文案） | `table=tblV8hKHncQCkpOB` |
-| 原商品仪表盘 | 模板遗留（铜铝塑钢密封胶） | [`blkRgeGoMaQuEZaB`](https://balancev.feishu.cn/base/O563bA6LkakSfmsTU0ScIWNFn3g?table=blkRgeGoMaQuEZaB) |
-| OTC报价仪表盘 | 由模板复制的 OTC 壳 | [`blk2g1IiEYJs0U2f`](https://balancev.feishu.cn/base/O563bA6LkakSfmsTU0ScIWNFn3g?table=blk2g1IiEYJs0U2f) |
+| Base | `app_token=N4npbXv29ah1MUs0abycR3mtnnb` | [打开](https://futu.feishu.cn/base/N4npbXv29ah1MUs0abycR3mtnnb) |
+| OTC报价台账 | 明细 | [`tblaI1iyq0PDxBuE`](https://futu.feishu.cn/base/N4npbXv29ah1MUs0abycR3mtnnb?table=tblaI1iyq0PDxBuE) |
+| 最新报价推送 | 摘要 | [`tblTJHz6ldmBbE5L`](https://futu.feishu.cn/base/N4npbXv29ah1MUs0abycR3mtnnb?table=tblTJHz6ldmBbE5L) |
+| OTC每日最高报价 | Best Deposit（期限×币种最高 Bid） | [`tblCOgymTbe0xugn`](https://futu.feishu.cn/base/N4npbXv29ah1MUs0abycR3mtnnb?table=tblCOgymTbe0xugn) |
+| OTC报价仪表盘 | 由模板复制 | [`blkgr5Ei44LmproF`](https://futu.feishu.cn/base/N4npbXv29ah1MUs0abycR3mtnnb?table=blkgr5Ei44LmproF) |
 
 ---
 
@@ -56,9 +57,10 @@
 **原则**：不要在 `.env` 写死 `TABLE_ID` / `VIEW_ID`。只需：
 
 ```env
-FEISHU_BITABLE_ACCESS_TOKEN=pt-...   # 插件 → 自定义插件 → 获取授权码
-FEISHU_BITABLE_APP_TOKEN=O563bA6LkakSfmsTU0ScIWNFn3g
+FEISHU_BITABLE_ACCESS_TOKEN=pt-...   # 在目标 Base 内：插件 → 自定义插件 → 获取授权码
+FEISHU_BITABLE_APP_TOKEN=N4npbXv29ah1MUs0abycR3mtnnb
 FEISHU_BITABLE_API_BASE=https://base-api.feishu.cn
+FEISHU_BITABLE_WEB_HOST=https://futu.feishu.cn
 ```
 
 `pt-` **必须**走 [`base-api.feishu.cn`](https://base-api.feishu.cn)；`open.feishu.cn` 会报 `99991668`。
@@ -73,6 +75,7 @@ FEISHU_BITABLE_API_BASE=https://base-api.feishu.cn
 |------|----------|------|
 | 存款 | `D\|日期\|机构\|期限\|币种` | `D\|2026-10-07\|Acme Bank\|6M\|USD` |
 | 债券 | `B\|日期\|机构\|代码\|币种` | `B\|2026-10-07\|Globex\|US1234567890\|USD` |
+| 每日最高存款 | `BEST\|日期\|期限\|币种` | `BEST\|2026-10-07\|6M\|USD` |
 | 推送摘要 | `G\|日期\|机构\|kind` | `G\|2026-10-07\|Acme Bank\|deposit` |
 
 ### 2.2 一日同步（`BiService::sync_day`）
@@ -82,7 +85,8 @@ FEISHU_BITABLE_API_BASE=https://base-api.feishu.cn
 3. **Load BI**：`BiQuoteFact` upsert（按 `sync_key`）。
 4. **Push 台账**：按日 `contains |YYYY-MM-DD|` 查远程 → create / update / 删多余行；回写 `bitable_record_id`。
 5. **Push 推送表**：按机构+类型写摘要行 + 全日汇总行。
-6. **记 Job**：`BiSyncJob`（created/updated/deleted/facts）。
+6. **Push 每日最高**：与站点 Best Deposit Quote 同口径（每期限×币种最高 Bid）→ `OTC每日最高报价`。
+7. **记 Job**：`BiSyncJob`（created/updated/deleted/facts）。
 
 ### 2.3 台账列（`quote_ledger`）
 
@@ -90,13 +94,20 @@ FEISHU_BITABLE_API_BASE=https://base-api.feishu.cn
 |----|------|------|
 | 同步键 | 文本（主键） | sync_key |
 | 日期 | 日期 | quote_date |
-| 机构 / 类型 / 期限 / 币种 | 文本/单选 | 平台字段；类型=`存款`/`债券` |
+| 机构 / 机构中文名 / 类型 / 期限 / 币种 | 文本/单选 | 平台字段；类型=`存款`/`债券` |
+| 期限排序 | 数字 | 与平台 `term_sort` 一致；视图/图表按此列排序（勿按文本「期限」字序） |
 | Bid / Ask | 数字 | 存款利率；债券优先收益率否则价格 |
 | 代码 / 名称 / 备注 | 文本 | 债券为主；备注含方向/票息/到期 |
 
 ### 2.4 推送表（`quote_digest`）
 
 供消息/看板摘要：`机构`、`类型`、`报价日`、`条数`、`摘要`。
+
+### 2.4.1 每日最高（`daily_best`）
+
+表名启发式：含「最高」/ `daily_best` → role `daily_best`（勿与台账的「报价」混淆）。
+
+列与台账相同子集（日期 / 期限 / 期限排序 / 币种 / 机构 / 机构中文名 / Bid）；备注固定为 `Best Deposit Quote`。只写有 Bid 的赢家行。
 
 ### 2.5 仪表盘（图表）
 
@@ -110,7 +121,7 @@ FEISHU_BITABLE_API_BASE=https://base-api.feishu.cn
 
 因此代码侧：
 
-1. `ensure_dashboard`：若不存在「OTC报价仪表盘」，则从模板 [`blkRgeGoMaQuEZaB`](https://balancev.feishu.cn/base/O563bA6LkakSfmsTU0ScIWNFn3g?table=blkRgeGoMaQuEZaB) **复制**壳子。
+1. `ensure_dashboard`：若不存在「OTC报价仪表盘」，则从 Base 内已有仪表盘（商品模板壳）复制一份。
 2. 为台账准备**带相等筛选的视图**（仪表盘里「等于」条件靠视图实现，见 §2.6）。
 3. **图表数据源需在飞书 UI 重绑**到对应视图（见 §4）。每日 `sync` 更新数据，并刷新「最新日*」视图的日期筛选。
 
@@ -209,13 +220,13 @@ python scripts/bi/daily_sync.py 2026-10-07
 
 ## 4. 仪表盘图表：一次性 UI 重绑（必做）
 
-开放 API 无法用 `pt-` 改图表组件，请在网页完成。仪表盘入口：[OTC报价仪表盘](https://balancev.feishu.cn/base/O563bA6LkakSfmsTU0ScIWNFn3g?table=blk2g1IiEYJs0U2f)。
+开放 API 无法用 `pt-` 改图表组件，请在网页完成。仪表盘入口见 Base：[OTC 多维表格](https://futu.feishu.cn/base/N4npbXv29ah1MUs0abycR3mtnnb)。
 
 ### 4.1 USD 多期限 × 多机构 Bid 雷达图（推荐）
 
 目标：同一报价日、仅 USD 存款；**雷达轴 = 期限**，**每条多边形 = 一家机构**，数值 = **Bid**。
 
-1. 打开 [OTC报价仪表盘](https://balancev.feishu.cn/base/O563bA6LkakSfmsTU0ScIWNFn3g?table=blk2g1IiEYJs0U2f) → 右上角编辑 / 添加图表。  
+1. 打开富途 Base 中的「OTC报价仪表盘」→ 右上角编辑 / 添加图表。  
 2. 图表类型选 **雷达图**。  
 3. **数据源**：表「OTC报价台账」→ 视图 **「最新日 USD 存款」**  
    （筛选已固定：类型=存款 · 币种=USD · 日期=最近同步日；勿选「全部报价」。）  
@@ -224,24 +235,27 @@ python scripts/bi/daily_sync.py 2026-10-07
 | 角色 | 字段 | 说明 |
 |------|------|------|
 | 分类 / 雷达轴（角） | **期限** | O/N、1W、1M、3M、6M… |
-| 系列 / 对比（多条线） | **机构** | Acme、Globex… 各一条多边形 |
+| 系列 / 对比（多条线） | **机构** | ABC HK、CCB HK、HXB… 各一条多边形 |
 | 数值 / 指标 | **Bid** | 聚合选 **平均值** 或 **最大值**（同日同机构同期限应只有 1 条，两者等价） |
 
-5. 不要再在图表里加「类型 / 币种」筛选（视图已滤好）。若轴顺序乱，到台账视图里按 `期限` 手动排序，或接受飞书默认顺序。  
+5. 不要再在图表里加「类型 / 币种」筛选（视图已滤好）。若轴顺序乱，到台账视图里按数字字段 **期限排序** 升序排序（勿按文本「期限」）。  
 6. 保存。之后每次 `sync` / `daily_sync` 会刷新「最新日 USD 存款」的日期，雷达图跟当日 Bid。
 
-**变体**：只要某一家机构的期限雷达 → 数据源改「最新日 Acme 美元存款」，去掉「系列=机构」，只留 期限 + Bid。
+**变体**：只要某一家机构的期限雷达 → 数据源改「最新日 ABC HK 美元存款」，去掉「系列=机构」，只留 期限 + Bid。
 
-### 4.2 其他常用图
+### 4.2 其他常用图（与原百仁思 OTC 仪表盘对齐）
 
 | 图表意图 | 数据源视图 | 维度 | 指标 |
 |----------|------------|------|------|
-| 报价条数（存款 vs 债券） | 最新日存款（或全表+类型） | 类型 | 记录数 |
+| USD 多机构期限雷达 | 最新日 USD 存款 | 期限 / 机构 | Bid |
 | 各机构 1M Bid 柱状 | 最新日 1M USD 存款 | 机构 | Bid 平均 |
-| 单机构期限曲线 | 最新日 Acme 美元存款 | 期限 | Bid / Ask |
+| 单机构期限曲线 | 最新日 ABC HK 美元存款 | 期限 | Bid |
+| 报价条数（存款 vs 债券） | 最新日存款 | 类型 | 记录数 |
 | 按日趋势 | USD 存款 | 日期 | Bid 平均 |
 
-模板原件仍在：[铜铝…仪表盘](https://balancev.feishu.cn/base/O563bA6LkakSfmsTU0ScIWNFn3g?table=blkRgeGoMaQuEZaB)（可忽略）。
+迁移后的仪表盘若仍显示「销售额」等模板图：删掉旧图 → 按上表重新添加（`pt-` API 无法改图表块）。
+
+若 Base 由商品模板创建，原仪表盘壳可忽略；以「OTC报价仪表盘」为准。
 
 ---
 

@@ -20,6 +20,9 @@ ops/sozu.toml
 __pycache__/
 *.pyc
 tmp_*.py
+scripts/ingest/_samples/
+scripts/ingest/tmp_*.py
+scripts/ingest/.watch_state/
 
 image_upload/content/*
 image_upload/post_hero/*

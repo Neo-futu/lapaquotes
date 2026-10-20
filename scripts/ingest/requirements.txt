@@ -1,0 +1,5 @@
+psycopg2-binary>=2.9
+python-dotenv>=1.0
+pywin32>=306
+PyYAML>=6.0
+openpyxl>=3.1

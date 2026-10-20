@@ -33,7 +33,7 @@ pub async fn ensure_otc_fields(client: &BitableClient) -> Result<Vec<String>, St
     let mut created = Vec::new();
     for t in &catalog {
         let specs = match t.role {
-            BitableRole::QuoteLedger => ledger_field_specs(),
+            BitableRole::QuoteLedger | BitableRole::DailyBest => ledger_field_specs(),
             BitableRole::QuoteDigest => digest_field_specs(),
             BitableRole::Unknown => continue,
         };
@@ -70,6 +70,18 @@ pub async fn migrate_all_tables(client: &BitableClient) -> Result<MigrateReport,
                 reports.push(
                     migrate_one(client, t, "最新报价推送", "消息内容", digest_field_specs())
                         .await?,
+                );
+            }
+            BitableRole::DailyBest => {
+                reports.push(
+                    migrate_one(
+                        client,
+                        t,
+                        "OTC每日最高报价",
+                        "全部最高",
+                        ledger_field_specs(),
+                    )
+                    .await?,
                 );
             }
             BitableRole::Unknown => {
@@ -205,6 +217,10 @@ fn ledger_field_specs() -> Vec<FieldSpec> {
             body: json!({ "field_name": "机构", "type": 1, "ui_type": "Text" }),
         },
         FieldSpec {
+            name: "机构中文名".into(),
+            body: json!({ "field_name": "机构中文名", "type": 1, "ui_type": "Text" }),
+        },
+        FieldSpec {
             name: "类型".into(),
             body: json!({
                 "field_name": "类型",
@@ -216,6 +232,15 @@ fn ledger_field_specs() -> Vec<FieldSpec> {
         FieldSpec {
             name: "期限".into(),
             body: json!({ "field_name": "期限", "type": 1, "ui_type": "Text" }),
+        },
+        FieldSpec {
+            name: "期限排序".into(),
+            body: json!({
+                "field_name": "期限排序",
+                "type": 2,
+                "ui_type": "Number",
+                "property": { "formatter": "0" }
+            }),
         },
         FieldSpec {
             name: "币种".into(),

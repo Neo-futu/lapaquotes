@@ -77,12 +77,14 @@ pub async fn discover_base(client: &BitableClient) -> Result<Vec<TableCatalog>, 
 
 /// Heuristic role assignment for the commodity → OTC template Base.
 pub fn assign_roles(tables: &mut [TableCatalog]) {
-    // Prefer name hints.
+    // Prefer name hints (order matters: 「最高报价」also contains「报价」).
     for t in tables.iter_mut() {
         let n = t.name.to_lowercase();
         if n.contains("推送") || n.contains("digest") || n.contains("消息") {
             t.role = BitableRole::QuoteDigest;
-        } else if n.contains("台账") || n.contains("报价") || n.contains("ledger") {
+        } else if n.contains("最高") || n.contains("daily_best") || n.contains("best deposit") {
+            t.role = BitableRole::DailyBest;
+        } else if n.contains("台账") || n.contains("ledger") || n.contains("报价") {
             t.role = BitableRole::QuoteLedger;
         }
     }

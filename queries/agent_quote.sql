@@ -10,12 +10,14 @@ FROM (
 ORDER BY quote_date DESC
 LIMIT 14;
 
---! deposit_by_date (quote_date?, institution_name?) : (institution_short_name?, bid_rate?, ask_rate?, note?)
+--! deposit_by_date (quote_date?, institution_name?) : (institution_short_name?, institution_cn_name?, bid_rate?, ask_rate?, note?)
 SELECT
     "DepositQuote".quote_date,
     "Institution".name AS institution_name,
     "Institution".short_name AS institution_short_name,
+    "Institution".cn_name AS institution_cn_name,
     "DepositQuote".term,
+    "DepositQuote".term_sort,
     "DepositQuote".currency,
     "DepositQuote".bid_rate,
     "DepositQuote".ask_rate,
@@ -26,11 +28,12 @@ WHERE (CAST(:quote_date AS DATE) IS NULL OR "DepositQuote".quote_date = CAST(:qu
   AND (CAST(:institution_name AS TEXT) IS NULL OR "Institution".name ILIKE '%' || :institution_name || '%')
 ORDER BY "DepositQuote".quote_date DESC, "Institution".name, "DepositQuote".currency, "DepositQuote".term_sort;
 
---! bond_by_date (quote_date?, institution_name?) : (institution_short_name?, bond_name?, maturity_date?, coupon_rate?, bid_yield?, ask_yield?, bid_price?, ask_price?, direction?, note?)
+--! bond_by_date (quote_date?, institution_name?) : (institution_short_name?, institution_cn_name?, bond_name?, maturity_date?, coupon_rate?, bid_yield?, ask_yield?, bid_price?, ask_price?, direction?, note?)
 SELECT
     "BondQuote".quote_date,
     "Institution".name AS institution_name,
     "Institution".short_name AS institution_short_name,
+    "Institution".cn_name AS institution_cn_name,
     "BondQuote".bond_code,
     "BondQuote".bond_name,
     "BondQuote".currency,

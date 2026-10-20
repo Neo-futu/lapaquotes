@@ -96,12 +96,20 @@ fn fact_to_ledger_fields(f: &QuoteFact) -> Value {
     m.insert("同步键".into(), json!(f.sync_key));
     m.insert("日期".into(), json!(date_to_ms(f.quote_date)));
     m.insert("机构".into(), json!(f.institution_name));
+    if let Some(cn) = &f.institution_cn_name {
+        if !cn.is_empty() {
+            m.insert("机构中文名".into(), json!(cn));
+        }
+    }
     m.insert(
         "类型".into(),
         json!(if f.kind == "bond" { "债券" } else { "存款" }),
     );
     if let Some(t) = &f.term {
         m.insert("期限".into(), json!(t));
+    }
+    if let Some(s) = f.term_sort {
+        m.insert("期限排序".into(), json!(s));
     }
     if let Some(c) = &f.currency {
         m.insert("币种".into(), json!(c));

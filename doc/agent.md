@@ -127,7 +127,8 @@ Platform DB (DepositQuote / BondQuote)
 
 ```env
 FEISHU_BITABLE_ACCESS_TOKEN=pt-...
-FEISHU_BITABLE_APP_TOKEN=O563bA6LkakSfmsTU0ScIWNFn3g
+FEISHU_BITABLE_APP_TOKEN=N4npbXv29ah1MUs0abycR3mtnnb
+FEISHU_BITABLE_WEB_HOST=https://futu.feishu.cn
 FEISHU_BITABLE_API_BASE=https://base-api.feishu.cn
 ```
 

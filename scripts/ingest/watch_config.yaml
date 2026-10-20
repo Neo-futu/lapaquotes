@@ -1,0 +1,16 @@
+# Outlook watch — 项目内配置（非 Windows 服务）
+# 注册到项目：python scripts/ingest/register_watch.py register
+# 查看状态：  python scripts/ingest/register_watch.py status
+# 启动项目：  python scripts/dev.py  （auto_with_dev=true 时自动拉起 watch）
+
+enabled: true
+auto_with_dev: true
+register_on_logon: false
+store: fixed income
+folder: Inbox
+poll_seconds: 60.0
+catch_up_minutes: 30.0
+no_events: true
+sync_bi: true
+bank: null
+subject_contains: null

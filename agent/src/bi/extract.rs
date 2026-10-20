@@ -2,6 +2,7 @@
 
 use chrono::NaiveDate;
 use cornucopia::deadpool_postgres::Pool;
+use std::collections::HashMap;
 
 use super::error::BiError;
 use super::models::QuoteFact;
@@ -14,6 +15,10 @@ pub fn deposit_sync_key(d: NaiveDate, inst: &str, term: &str, ccy: &str) -> Stri
 
 pub fn bond_sync_key(d: NaiveDate, inst: &str, code: &str, ccy: &str) -> String {
     format!("B|{d}|{inst}|{code}|{ccy}")
+}
+
+pub fn best_deposit_sync_key(d: NaiveDate, term: &str, ccy: &str) -> String {
+    format!("BEST|{d}|{term}|{ccy}")
 }
 
 pub async fn extract_day(pool: &Pool, date: NaiveDate) -> Result<Vec<QuoteFact>, BiError> {
@@ -32,7 +37,9 @@ pub async fn extract_day(pool: &Pool, date: NaiveDate) -> Result<Vec<QuoteFact>,
             quote_date: d.quote_date,
             kind: "deposit".into(),
             institution_name: d.institution_name,
+            institution_cn_name: d.institution_cn_name,
             term: Some(d.term),
+            term_sort: Some(d.term_sort),
             currency: Some(d.currency),
             bond_code: None,
             bond_name: None,
@@ -63,7 +70,9 @@ pub async fn extract_day(pool: &Pool, date: NaiveDate) -> Result<Vec<QuoteFact>,
             quote_date: b.quote_date,
             kind: "bond".into(),
             institution_name: b.institution_name,
+            institution_cn_name: b.institution_cn_name,
             term: None,
+            term_sort: None,
             currency: Some(b.currency),
             bond_code: Some(b.bond_code),
             bond_name: b.bond_name,
@@ -96,4 +105,61 @@ pub async fn resolve_quote_date(
         .into_iter()
         .next()
         .ok_or_else(|| BiError::Msg("no quote dates in platform DB".into()))
+}
+
+/// Same口径 as site「Best Deposit Quote」: highest bid per (term × currency).
+/// Rows are Feishu-only (sync_key `BEST|…`); not written to `BiQuoteFact`.
+pub fn best_deposit_facts(date: NaiveDate, facts: &[QuoteFact]) -> Vec<QuoteFact> {
+    let mut groups: HashMap<(String, String), Vec<&QuoteFact>> = HashMap::new();
+    for f in facts {
+        if f.kind != "deposit" {
+            continue;
+        }
+        let term = match &f.term {
+            Some(t) if !t.is_empty() => t.clone(),
+            _ => continue,
+        };
+        let ccy = match &f.currency {
+            Some(c) if !c.is_empty() => c.clone(),
+            _ => continue,
+        };
+        groups.entry((term, ccy)).or_default().push(f);
+    }
+
+    let mut out: Vec<QuoteFact> = groups
+        .into_iter()
+        .filter_map(|((term, currency), rows)| {
+            let winner = rows
+                .into_iter()
+                .filter(|r| r.bid.is_some())
+                .max_by(|a, b| a.bid.partial_cmp(&b.bid).unwrap_or(std::cmp::Ordering::Equal))?;
+            Some(QuoteFact {
+                id: new_id(),
+                sync_key: best_deposit_sync_key(date, &term, &currency),
+                quote_date: date,
+                kind: "deposit".into(),
+                institution_name: winner.institution_name.clone(),
+                institution_cn_name: winner.institution_cn_name.clone(),
+                term: Some(term),
+                term_sort: winner.term_sort,
+                currency: Some(currency),
+                bond_code: None,
+                bond_name: None,
+                bid: winner.bid,
+                ask: None,
+                note: Some("Best Deposit Quote".into()),
+                bitable_table_id: None,
+                bitable_record_id: None,
+                pushed_at: None,
+            })
+        })
+        .collect();
+
+    out.sort_by(|a, b| {
+        a.currency
+            .cmp(&b.currency)
+            .then_with(|| a.term_sort.cmp(&b.term_sort))
+            .then_with(|| a.term.cmp(&b.term))
+    });
+    out
 }

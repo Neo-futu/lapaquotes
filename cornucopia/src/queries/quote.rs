@@ -15,11 +15,13 @@ pub struct Institutions {
     pub id: String,
     pub name: String,
     pub short_name: Option<String>,
+    pub cn_name: Option<String>,
 }
 pub struct InstitutionsBorrowed<'a> {
     pub id: &'a str,
     pub name: &'a str,
     pub short_name: Option<&'a str>,
+    pub cn_name: Option<&'a str>,
 }
 impl<'a> From<InstitutionsBorrowed<'a>> for Institutions {
     fn from(
@@ -27,12 +29,14 @@ impl<'a> From<InstitutionsBorrowed<'a>> for Institutions {
             id,
             name,
             short_name,
+            cn_name,
         }: InstitutionsBorrowed<'a>,
     ) -> Self {
         Self {
             id: id.into(),
             name: name.into(),
             short_name: short_name.map(|v| v.into()),
+            cn_name: cn_name.map(|v| v.into()),
         }
     }
 }
@@ -43,6 +47,7 @@ pub struct DepositsByDate {
     pub institution_id: String,
     pub institution_name: String,
     pub institution_short_name: Option<String>,
+    pub institution_cn_name: Option<String>,
     pub term: String,
     pub currency: String,
     pub bid_rate: Option<rust_decimal::Decimal>,
@@ -55,6 +60,7 @@ pub struct DepositsByDateBorrowed<'a> {
     pub institution_id: &'a str,
     pub institution_name: &'a str,
     pub institution_short_name: Option<&'a str>,
+    pub institution_cn_name: Option<&'a str>,
     pub term: &'a str,
     pub currency: &'a str,
     pub bid_rate: Option<rust_decimal::Decimal>,
@@ -69,6 +75,7 @@ impl<'a> From<DepositsByDateBorrowed<'a>> for DepositsByDate {
             institution_id,
             institution_name,
             institution_short_name,
+            institution_cn_name,
             term,
             currency,
             bid_rate,
@@ -82,6 +89,7 @@ impl<'a> From<DepositsByDateBorrowed<'a>> for DepositsByDate {
             institution_id: institution_id.into(),
             institution_name: institution_name.into(),
             institution_short_name: institution_short_name.map(|v| v.into()),
+            institution_cn_name: institution_cn_name.map(|v| v.into()),
             term: term.into(),
             currency: currency.into(),
             bid_rate,
@@ -97,6 +105,7 @@ pub struct BondsByDate {
     pub institution_id: String,
     pub institution_name: String,
     pub institution_short_name: Option<String>,
+    pub institution_cn_name: Option<String>,
     pub bond_code: String,
     pub bond_name: Option<String>,
     pub currency: String,
@@ -115,6 +124,7 @@ pub struct BondsByDateBorrowed<'a> {
     pub institution_id: &'a str,
     pub institution_name: &'a str,
     pub institution_short_name: Option<&'a str>,
+    pub institution_cn_name: Option<&'a str>,
     pub bond_code: &'a str,
     pub bond_name: Option<&'a str>,
     pub currency: &'a str,
@@ -135,6 +145,7 @@ impl<'a> From<BondsByDateBorrowed<'a>> for BondsByDate {
             institution_id,
             institution_name,
             institution_short_name,
+            institution_cn_name,
             bond_code,
             bond_name,
             currency,
@@ -154,6 +165,7 @@ impl<'a> From<BondsByDateBorrowed<'a>> for BondsByDate {
             institution_id: institution_id.into(),
             institution_name: institution_name.into(),
             institution_short_name: institution_short_name.map(|v| v.into()),
+            institution_cn_name: institution_cn_name.map(|v| v.into()),
             bond_code: bond_code.into(),
             bond_name: bond_name.map(|v| v.into()),
             currency: currency.into(),
@@ -441,7 +453,7 @@ where
 pub struct InstitutionsStmt(&'static str, Option<tokio_postgres::Statement>);
 pub fn institutions() -> InstitutionsStmt {
     InstitutionsStmt(
-        "SELECT \"Institution\".id, \"Institution\".name, \"Institution\".short_name FROM \"Institution\" WHERE \"Institution\".is_active = true ORDER BY \"Institution\".name",
+        "SELECT \"Institution\".id, \"Institution\".name, \"Institution\".short_name, \"Institution\".cn_name FROM \"Institution\" WHERE \"Institution\".is_active = true ORDER BY \"Institution\".name",
         None,
     )
 }
@@ -468,6 +480,7 @@ impl InstitutionsStmt {
                         id: row.try_get(0)?,
                         name: row.try_get(1)?,
                         short_name: row.try_get(2)?,
+                        cn_name: row.try_get(3)?,
                     })
                 },
             mapper: |it| Institutions::from(it),
@@ -535,7 +548,7 @@ impl LatestBondDateStmt {
 pub struct DepositsByDateStmt(&'static str, Option<tokio_postgres::Statement>);
 pub fn deposits_by_date() -> DepositsByDateStmt {
     DepositsByDateStmt(
-        "SELECT \"DepositQuote\".id, \"DepositQuote\".quote_date, \"DepositQuote\".institution_id, \"Institution\".name AS institution_name, \"Institution\".short_name AS institution_short_name, \"DepositQuote\".term, \"DepositQuote\".currency, \"DepositQuote\".bid_rate, \"DepositQuote\".ask_rate, \"DepositQuote\".note FROM \"DepositQuote\" INNER JOIN \"Institution\" ON \"Institution\".id = \"DepositQuote\".institution_id WHERE (CAST($1 AS DATE) IS NULL OR \"DepositQuote\".quote_date = CAST($1 AS DATE)) AND (CAST($2 AS TEXT) IS NULL OR \"DepositQuote\".institution_id = $2) ORDER BY \"DepositQuote\".quote_date DESC, \"Institution\".name, \"DepositQuote\".currency, \"DepositQuote\".term_sort",
+        "SELECT \"DepositQuote\".id, \"DepositQuote\".quote_date, \"DepositQuote\".institution_id, \"Institution\".name AS institution_name, \"Institution\".short_name AS institution_short_name, \"Institution\".cn_name AS institution_cn_name, \"DepositQuote\".term, \"DepositQuote\".currency, \"DepositQuote\".bid_rate, \"DepositQuote\".ask_rate, \"DepositQuote\".note FROM \"DepositQuote\" INNER JOIN \"Institution\" ON \"Institution\".id = \"DepositQuote\".institution_id WHERE (CAST($1 AS DATE) IS NULL OR \"DepositQuote\".quote_date = CAST($1 AS DATE)) AND (CAST($2 AS TEXT) IS NULL OR \"DepositQuote\".institution_id = $2) ORDER BY \"DepositQuote\".quote_date DESC, \"Institution\".name, \"DepositQuote\".currency, \"DepositQuote\".term_sort",
         None,
     )
 }
@@ -567,11 +580,12 @@ impl DepositsByDateStmt {
                     institution_id: row.try_get(2)?,
                     institution_name: row.try_get(3)?,
                     institution_short_name: row.try_get(4)?,
-                    term: row.try_get(5)?,
-                    currency: row.try_get(6)?,
-                    bid_rate: row.try_get(7)?,
-                    ask_rate: row.try_get(8)?,
-                    note: row.try_get(9)?,
+                    institution_cn_name: row.try_get(5)?,
+                    term: row.try_get(6)?,
+                    currency: row.try_get(7)?,
+                    bid_rate: row.try_get(8)?,
+                    ask_rate: row.try_get(9)?,
+                    note: row.try_get(10)?,
                 })
             },
             mapper: |it| DepositsByDate::from(it),
@@ -599,7 +613,7 @@ impl<'c, 'a, 's, C: GenericClient, T1: crate::StringSql>
 pub struct BondsByDateStmt(&'static str, Option<tokio_postgres::Statement>);
 pub fn bonds_by_date() -> BondsByDateStmt {
     BondsByDateStmt(
-        "SELECT \"BondQuote\".id, \"BondQuote\".quote_date, \"BondQuote\".institution_id, \"Institution\".name AS institution_name, \"Institution\".short_name AS institution_short_name, \"BondQuote\".bond_code, \"BondQuote\".bond_name, \"BondQuote\".currency, \"BondQuote\".maturity_date, \"BondQuote\".coupon_rate, \"BondQuote\".bid_yield, \"BondQuote\".ask_yield, \"BondQuote\".bid_price, \"BondQuote\".ask_price, \"BondQuote\".direction, \"BondQuote\".note FROM \"BondQuote\" INNER JOIN \"Institution\" ON \"Institution\".id = \"BondQuote\".institution_id WHERE (CAST($1 AS DATE) IS NULL OR \"BondQuote\".quote_date = CAST($1 AS DATE)) AND (CAST($2 AS TEXT) IS NULL OR \"BondQuote\".institution_id = $2) ORDER BY \"BondQuote\".quote_date DESC, \"Institution\".name, \"BondQuote\".currency, \"BondQuote\".bond_code",
+        "SELECT \"BondQuote\".id, \"BondQuote\".quote_date, \"BondQuote\".institution_id, \"Institution\".name AS institution_name, \"Institution\".short_name AS institution_short_name, \"Institution\".cn_name AS institution_cn_name, \"BondQuote\".bond_code, \"BondQuote\".bond_name, \"BondQuote\".currency, \"BondQuote\".maturity_date, \"BondQuote\".coupon_rate, \"BondQuote\".bid_yield, \"BondQuote\".ask_yield, \"BondQuote\".bid_price, \"BondQuote\".ask_price, \"BondQuote\".direction, \"BondQuote\".note FROM \"BondQuote\" INNER JOIN \"Institution\" ON \"Institution\".id = \"BondQuote\".institution_id WHERE (CAST($1 AS DATE) IS NULL OR \"BondQuote\".quote_date = CAST($1 AS DATE)) AND (CAST($2 AS TEXT) IS NULL OR \"BondQuote\".institution_id = $2) ORDER BY \"BondQuote\".quote_date DESC, \"Institution\".name, \"BondQuote\".currency, \"BondQuote\".bond_code",
         None,
     )
 }
@@ -630,17 +644,18 @@ impl BondsByDateStmt {
                         institution_id: row.try_get(2)?,
                         institution_name: row.try_get(3)?,
                         institution_short_name: row.try_get(4)?,
-                        bond_code: row.try_get(5)?,
-                        bond_name: row.try_get(6)?,
-                        currency: row.try_get(7)?,
-                        maturity_date: row.try_get(8)?,
-                        coupon_rate: row.try_get(9)?,
-                        bid_yield: row.try_get(10)?,
-                        ask_yield: row.try_get(11)?,
-                        bid_price: row.try_get(12)?,
-                        ask_price: row.try_get(13)?,
-                        direction: row.try_get(14)?,
-                        note: row.try_get(15)?,
+                        institution_cn_name: row.try_get(5)?,
+                        bond_code: row.try_get(6)?,
+                        bond_name: row.try_get(7)?,
+                        currency: row.try_get(8)?,
+                        maturity_date: row.try_get(9)?,
+                        coupon_rate: row.try_get(10)?,
+                        bid_yield: row.try_get(11)?,
+                        ask_yield: row.try_get(12)?,
+                        bid_price: row.try_get(13)?,
+                        ask_price: row.try_get(14)?,
+                        direction: row.try_get(15)?,
+                        note: row.try_get(16)?,
                     })
                 },
             mapper: |it| BondsByDate::from(it),

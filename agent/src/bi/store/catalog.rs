@@ -97,7 +97,8 @@ impl CatalogStore<'_> {
                   CASE role
                     WHEN 'quote_ledger' THEN 0
                     WHEN 'quote_digest' THEN 1
-                    ELSE 2
+                    WHEN 'daily_best' THEN 2
+                    ELSE 3
                   END,
                   name
                 "#,

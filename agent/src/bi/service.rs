@@ -7,7 +7,7 @@ use tracing::info;
 
 use super::bitable::{self, BitableClient};
 use super::error::BiError;
-use super::extract::{extract_day, resolve_quote_date};
+use super::extract::{best_deposit_facts, extract_day, resolve_quote_date};
 use super::models::{BitableRole, SyncDayReport, TableCatalog, VerifyReport};
 use super::store::BiStore;
 
@@ -130,18 +130,29 @@ impl BiService {
         let job = self.store.jobs().start("sync_day", Some(date)).await?;
 
         let result: Result<SyncDayReport, BiError> = async {
-            // Ensure catalog exists.
+            // Ensure catalog exists; refresh when ledger/best roles missing
+            // (e.g. 「每日最高报价」was previously mis-tagged as quote_ledger).
             let mut ledger = self
                 .store
                 .catalog()
                 .table_by_role(BitableRole::QuoteLedger)
                 .await?;
-            if ledger.is_none() {
+            let mut daily_best = self
+                .store
+                .catalog()
+                .table_by_role(BitableRole::DailyBest)
+                .await?;
+            if ledger.is_none() || daily_best.is_none() {
                 self.refresh_catalog().await?;
                 ledger = self
                     .store
                     .catalog()
                     .table_by_role(BitableRole::QuoteLedger)
+                    .await?;
+                daily_best = self
+                    .store
+                    .catalog()
+                    .table_by_role(BitableRole::DailyBest)
                     .await?;
             }
             let ledger = ledger.ok_or_else(|| {
@@ -182,6 +193,20 @@ impl BiService {
                 0
             };
 
+            // Site「Best Deposit Quote」→ OTC每日最高报价（按期限×币种最高 Bid）
+            let best_rows = best_deposit_facts(date, &facts);
+            let (best_updated, best_table_id) = if let Some(t) = &daily_best {
+                let best_push = bitable::push_ledger(&client, &t.table_id, date, &best_rows)
+                    .await
+                    .map_err(BiError::bitable)?;
+                (
+                    best_push.created + best_push.updated,
+                    Some(t.table_id.clone()),
+                )
+            } else {
+                (0, None)
+            };
+
             // Refresh filtered views (incl. 最新日* ExactDate) for dashboards.
             if let Err(e) = bitable::ensure_ledger_chart_views_for_date(
                 &client,
@@ -201,8 +226,10 @@ impl BiService {
                 updated: push.updated,
                 deleted: push.deleted,
                 digest_updated,
+                best_updated,
                 ledger_table_id: ledger.table_id,
                 digest_table_id: digest.map(|d| d.table_id),
+                best_table_id,
             };
             info!(?report, "bi sync_day done");
             Ok(report)

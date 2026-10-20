@@ -13,7 +13,9 @@ use crate::context::ContextError;
 pub struct DepositQuoteSummary {
     pub quote_date: NaiveDate,
     pub institution_name: String,
+    pub institution_cn_name: Option<String>,
     pub term: String,
+    pub term_sort: i32,
     pub currency: String,
     pub bid: Option<f64>,
     pub ask: Option<f64>,
@@ -25,6 +27,7 @@ pub struct DepositQuoteSummary {
 pub struct BondQuoteSummary {
     pub quote_date: NaiveDate,
     pub institution_name: String,
+    pub institution_cn_name: Option<String>,
     pub bond_code: String,
     pub bond_name: Option<String>,
     pub currency: String,
@@ -79,7 +82,9 @@ pub async fn deposit_by_date(
         .map(|r| DepositQuoteSummary {
             quote_date: r.quote_date,
             institution_name: r.institution_name,
+            institution_cn_name: r.institution_cn_name,
             term: r.term,
+            term_sort: r.term_sort,
             currency: r.currency,
             bid: dec_to_f64(r.bid_rate),
             ask: dec_to_f64(r.ask_rate),
@@ -106,6 +111,7 @@ pub async fn bond_by_date(
         .map(|r| BondQuoteSummary {
             quote_date: r.quote_date,
             institution_name: r.institution_name,
+            institution_cn_name: r.institution_cn_name,
             bond_code: r.bond_code,
             bond_name: r.bond_name,
             currency: r.currency,
@@ -143,6 +149,7 @@ pub async fn search_bonds(
         .map(|r| BondQuoteSummary {
             quote_date: r.quote_date,
             institution_name: r.institution_name,
+            institution_cn_name: None,
             bond_code: r.bond_code,
             bond_name: r.bond_name,
             currency: r.currency,

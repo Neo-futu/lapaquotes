@@ -11,6 +11,8 @@ pub enum BitableRole {
     QuoteLedger,
     /// 推送摘要表（按机构/日汇总文案）
     QuoteDigest,
+    /// 每日最高存款报价（与站点 Best Deposit Quote 同口径）
+    DailyBest,
     Unknown,
 }
 
@@ -19,6 +21,7 @@ impl BitableRole {
         match self {
             Self::QuoteLedger => "quote_ledger",
             Self::QuoteDigest => "quote_digest",
+            Self::DailyBest => "daily_best",
             Self::Unknown => "unknown",
         }
     }
@@ -27,6 +30,7 @@ impl BitableRole {
         match s {
             "quote_ledger" => Self::QuoteLedger,
             "quote_digest" => Self::QuoteDigest,
+            "daily_best" => Self::DailyBest,
             _ => Self::Unknown,
         }
     }
@@ -67,7 +71,10 @@ pub struct QuoteFact {
     /// `deposit` | `bond`
     pub kind: String,
     pub institution_name: String,
+    pub institution_cn_name: Option<String>,
     pub term: Option<String>,
+    /// Numeric tenor order (days-ish); used for Feishu Number field「期限排序」.
+    pub term_sort: Option<i32>,
     pub currency: Option<String>,
     pub bond_code: Option<String>,
     pub bond_name: Option<String>,
@@ -102,8 +109,10 @@ pub struct SyncDayReport {
     pub updated: usize,
     pub deleted: usize,
     pub digest_updated: usize,
+    pub best_updated: usize,
     pub ledger_table_id: String,
     pub digest_table_id: Option<String>,
+    pub best_table_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

@@ -2,6 +2,28 @@
 
 本文档描述报价数据库表结构，供外部 Python 脚本（解析各 OTC 机构邮件的存款/债券每日报价并入库）对接。Rust 站点（前台 `/quotes`、admin、AI agent）只读这些表。
 
+**Outlook 存款报价实装**：[`scripts/ingest/`](../scripts/ingest/)（组邮箱 `fixed income` → **每机构独立脚本** `banks/*.py` + `institutions.yaml` → `DepositQuote`）。周五样例：
+
+```sh
+python scripts/ingest/run_ingest.py --friday
+python scripts/ingest/run_ingest.py --date 2026-10-16 --dry-run
+python scripts/ingest/banks/abchk.py --date 2026-10-16 --dry-run   # 单机构
+```
+
+新增机构：新建 `scripts/ingest/banks/<key>.py`（实现 `parse`），并在 `institutions.yaml` 登记发件人/主题与 `script: <key>`。详见 [`scripts/ingest/README.md`](../scripts/ingest/README.md)。
+
+**实时监测**（项目内配置注册，非 Windows 服务；`dev.py` 启动时自动拉起）：
+
+```sh
+python scripts/ingest/register_watch.py register   # 写入 watch_config.yaml
+python scripts/dev.py                              # 自动启动 watch_outlook
+python scripts/ingest/register_watch.py status
+```
+
+**每日机构 Check**：入库时写入 `IngestDayCheck` / `IngestMailLog`；前台 `/quotes` 日历下方按选中日期显示各机构 ✓/○/✗（按收件时间早→晚）。迁移：`scripts/db/08_ingest_day_check.sql`。重扫/空表/以此為準 三场景见 [`scripts/ingest/TEST_CASES_WATCH.md`](../scripts/ingest/TEST_CASES_WATCH.md)。
+
+见 `scripts/ingest/register_watch.py` / `watch_config.yaml` / `pipeline.py`。
+
 ## 1. 连接
 
 ```

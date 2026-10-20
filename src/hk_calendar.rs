@@ -12,7 +12,7 @@ pub struct HolidayView {
     pub name: String,
 }
 
-fn today_local() -> NaiveDate {
+pub fn today_local() -> NaiveDate {
     #[cfg(feature = "hydrate")]
     {
         let d = js_sys::Date::new_0();
@@ -75,7 +75,7 @@ pub fn HkHolidayCalendar(quote_date: RwSignal<String>) -> impl IntoView {
     let view_year = RwSignal::new(initial.year());
     let view_month = RwSignal::new(initial.month());
 
-    // Keep the visible month in sync when DATE is changed elsewhere (date input / default latest).
+    // Keep the visible month in sync when DATE is changed elsewhere (date input / default today).
     Effect::new(move |_| {
         if let Some(d) = parse_ymd(&quote_date.get()) {
             view_year.set(d.year());

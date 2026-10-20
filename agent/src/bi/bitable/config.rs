@@ -5,6 +5,8 @@ pub struct BitableConfig {
     pub access_token: String,
     pub app_token: String,
     pub api_base: String,
+    /// Browser host for Base URLs, e.g. `https://futu.feishu.cn`.
+    pub web_host: String,
 }
 
 impl BitableConfig {
@@ -31,10 +33,16 @@ impl BitableConfig {
             .trim_end_matches('/')
             .to_string();
 
+        let web_host = first_env(&["FEISHU_BITABLE_WEB_HOST", "FEISHU_WEB_HOST"])
+            .unwrap_or_else(|| "https://futu.feishu.cn".into())
+            .trim_end_matches('/')
+            .to_string();
+
         Ok(Self {
             access_token,
             app_token,
             api_base,
+            web_host,
         })
     }
 

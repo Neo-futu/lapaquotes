@@ -1,0 +1,109 @@
+# Outlook sender → Institution mapping for OTC deposit quotes.
+# Match order: subject_contains (preferred for same-sender banks) → email → domain.
+#
+# 新增机构：
+#   1. 在 banks/ 下新增 <key>.py，实现 parse(...)；可加 if __name__ 单行跑
+#   2. 在本文件 institutions 增加一条，script 指向该文件名（不含 .py）
+
+defaults:
+  store: "fixed income"
+  folder: "Inbox"
+  currency_aliases:
+    CNH: CNY
+    RMB: CNY
+    OFFSHORE CNH: CNY
+
+institutions:
+  - key: ncb
+    name: Nanyang Commercial Bank
+    short_name: NCB
+    cn_name: 南洋商业银行
+    emails:
+      - elainechan@ncb.com.hk
+    domains:
+      - ncb.com.hk
+    subject_contains:
+      - today's indicative deposit rates
+      - indicative deposit rates
+    script: ncb
+
+  - key: abchk
+    name: Agricultural Bank of China Hong Kong
+    short_name: ABC HK
+    cn_name: 中国农业银行香港分行
+    emails:
+      - deancheung@abchina.com
+      - michaelfunghk@abchina.com
+    domains:
+      - abchina.com
+    subject_contains:
+      - ABCHK
+    script: abchk
+
+  - key: hxb
+    name: Hua Xia Bank Hong Kong
+    short_name: HXB HK
+    cn_name: 华夏银行香港分行
+    emails:
+      - hkgvickyli@hxb.com.cn
+      - hkggordonchan@hxb.com.cn
+    domains:
+      - hxb.com.cn
+    subject_contains:
+      - 华夏银行
+      - 華夏銀行
+      - 以此為準
+      - 以此为准
+    script: hxb
+
+  - key: ccbhk
+    name: China Construction Bank Hong Kong
+    short_name: CCB HK
+    cn_name: 中国建设银行香港分行
+    emails:
+      - Luna.MY.Xiao@asia.ccb.com
+    domains:
+      - asia.ccb.com
+    subject_contains:
+      - CCBHK
+      - deposit indications_CCBHK
+    script: ccbhk
+
+  - key: ccba
+    name: China Construction Bank Asia
+    short_name: CCB Asia
+    cn_name: 中国建设银行(亚洲)
+    emails:
+      - Luna.MY.Xiao@asia.ccb.com
+    domains:
+      - asia.ccb.com
+    subject_contains:
+      - CCBA
+      - deposit indications_CCBA
+    script: ccba
+
+  - key: uob
+    name: United Overseas Bank Hong Kong
+    short_name: UOB HK
+    cn_name: 大华银行香港分行
+    emails:
+      - Wilson.WongKH@uobgroup.com
+      - HKTransactionBanking@UOBgroup.com
+    domains:
+      - uobgroup.com
+    subject_contains:
+      - UOB Indicative Deposit
+    script: uob
+
+  - key: citic
+    name: China CITIC Bank International
+    short_name: CITIC
+    cn_name: 中信银行(国际)
+    emails:
+      - EvelynY_Li@cncbinternational.com
+    domains:
+      - cncbinternational.com
+    subject_contains:
+      - CITIC Bank International
+      - Deposit Rate Indications
+    script: citic
