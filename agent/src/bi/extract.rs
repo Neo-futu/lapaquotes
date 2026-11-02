@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use super::error::BiError;
 use super::models::QuoteFact;
 use super::store::new_id;
+use super::workday::next_hk_workday;
 use crate::quote_context::{bond_by_date, deposit_by_date};
 
 pub fn deposit_sync_key(d: NaiveDate, inst: &str, term: &str, ccy: &str) -> String {
@@ -28,6 +29,7 @@ pub async fn extract_day(pool: &Pool, date: NaiveDate) -> Result<Vec<QuoteFact>,
     let bonds = bond_by_date(pool, Some(date), None)
         .await
         .map_err(|e| BiError::Msg(e.to_string()))?;
+    let next_workday = Some(next_hk_workday(pool, date).await?);
 
     let mut facts = Vec::with_capacity(deposits.len() + bonds.len());
     for d in deposits {
@@ -35,6 +37,7 @@ pub async fn extract_day(pool: &Pool, date: NaiveDate) -> Result<Vec<QuoteFact>,
             id: new_id(),
             sync_key: deposit_sync_key(d.quote_date, &d.institution_name, &d.term, &d.currency),
             quote_date: d.quote_date,
+            next_workday,
             kind: "deposit".into(),
             institution_name: d.institution_name,
             institution_cn_name: d.institution_cn_name,
@@ -68,6 +71,7 @@ pub async fn extract_day(pool: &Pool, date: NaiveDate) -> Result<Vec<QuoteFact>,
             id: new_id(),
             sync_key: bond_sync_key(b.quote_date, &b.institution_name, &b.bond_code, &b.currency),
             quote_date: b.quote_date,
+            next_workday,
             kind: "bond".into(),
             institution_name: b.institution_name,
             institution_cn_name: b.institution_cn_name,
@@ -126,6 +130,7 @@ pub fn best_deposit_facts(date: NaiveDate, facts: &[QuoteFact]) -> Vec<QuoteFact
         groups.entry((term, ccy)).or_default().push(f);
     }
 
+    let next_workday = facts.first().and_then(|f| f.next_workday);
     let mut out: Vec<QuoteFact> = groups
         .into_iter()
         .filter_map(|((term, currency), rows)| {
@@ -137,6 +142,7 @@ pub fn best_deposit_facts(date: NaiveDate, facts: &[QuoteFact]) -> Vec<QuoteFact
                 id: new_id(),
                 sync_key: best_deposit_sync_key(date, &term, &currency),
                 quote_date: date,
+                next_workday,
                 kind: "deposit".into(),
                 institution_name: winner.institution_name.clone(),
                 institution_cn_name: winner.institution_cn_name.clone(),

@@ -68,6 +68,8 @@ pub struct QuoteFact {
     pub id: String,
     pub sync_key: String,
     pub quote_date: NaiveDate,
+    /// Next HK working day after `quote_date` (skip Sat/Sun + `Holiday` region=HK).
+    pub next_workday: Option<NaiveDate>,
     /// `deposit` | `bond`
     pub kind: String,
     pub institution_name: String,

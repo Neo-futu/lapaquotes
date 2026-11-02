@@ -375,10 +375,18 @@ class WatchService:
         except ImportError:
             pythoncom = None  # type: ignore
 
+        # Re-scan today's Inbox periodically so overnight/restart gaps still ingest.
+        today_refresh_every = max(self.poll_seconds * 30, 1800.0)  # ≥30 min
+        last_today_refresh = 0.0
+
         while not self._stop.is_set():
             try:
                 if pythoncom is not None:
                     pythoncom.PumpWaitingMessages()
+                now = time.time()
+                if now - last_today_refresh >= today_refresh_every:
+                    self.refresh_date(dt.date.today())
+                    last_today_refresh = now
                 n = self.poll_once()
                 if n:
                     log.debug("poll ingested %s", n)
@@ -470,7 +478,11 @@ def main() -> int:
         if refresh_date is not None:
             svc.refresh_date(refresh_date)
         else:
+            # Short recent catch-up + full today scan (covers restart overnight gaps).
             svc.catch_up(catch_up_minutes)
+            if not once:
+                log.info("startup refresh today=%s", dt.date.today())
+                svc.refresh_date(dt.date.today())
         if once:
             if refresh_date is None:
                 n = svc.poll_once()

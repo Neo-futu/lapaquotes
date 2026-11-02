@@ -52,7 +52,7 @@
 | BI Store | `BiQuoteFact` 等 | 按日抽取事实、记录 Feishu `record_id`、任务日志、目录缓存 |
 | BiService | `agent/src/bi/service.rs` | 编排：catalog → migrate → sync → dashboard |
 | Bitable 适配器 | `agent/src/bi/bitable/` | 发现表/视图/仪表盘、改表结构、upsert 记录 |
-| 日更脚本 | `scripts/bi/daily_sync.py` | Cron：调 HTTP，失败则 `cargo … bi_sync` |
+| 日更脚本 | `scripts/bi/daily_sync.py` | Cron：指定日若 `DepositQuote` 为空会先跑 Outlook ingest，再 HTTP sync；失败则 `cargo … bi_sync` |
 
 **原则**：不要在 `.env` 写死 `TABLE_ID` / `VIEW_ID`。只需：
 
@@ -94,6 +94,7 @@ FEISHU_BITABLE_WEB_HOST=https://futu.feishu.cn
 |----|------|------|
 | 同步键 | 文本（主键） | sync_key |
 | 日期 | 日期 | quote_date |
+| 下一工作日 | 日期 | `quote_date` 之后首个香港工作日（跳过周末 + `Holiday` region=`HK`；SQL 可用 LEAD 回填） |
 | 机构 / 机构中文名 / 类型 / 期限 / 币种 | 文本/单选 | 平台字段；类型=`存款`/`债券` |
 | 期限排序 | 数字 | 与平台 `term_sort` 一致；视图/图表按此列排序（勿按文本「期限」字序） |
 | Bid / Ask | 数字 | 存款利率；债券优先收益率否则价格 |
@@ -101,13 +102,20 @@ FEISHU_BITABLE_WEB_HOST=https://futu.feishu.cn
 
 ### 2.4 推送表（`quote_digest`）
 
-供消息/看板摘要：`机构`、`类型`、`报价日`、`条数`、`摘要`。
+供消息/看板摘要：`机构`、`类型`、`报价日`、`下一工作日`、`条数`、`摘要`。
 
 ### 2.4.1 每日最高（`daily_best`）
 
 表名启发式：含「最高」/ `daily_best` → role `daily_best`（勿与台账的「报价」混淆）。
 
-列与台账相同子集（日期 / 期限 / 期限排序 / 币种 / 机构 / 机构中文名 / Bid）；备注固定为 `Best Deposit Quote`。只写有 Bid 的赢家行。
+列与台账相同子集（日期 / 下一工作日 / 期限 / 期限排序 / 币种 / 机构 / 机构中文名 / Bid）；备注固定为 `Best Deposit Quote`。只写有 Bid 的赢家行。
+
+### 2.4.2 下一工作日（HK）
+
+- **BI 库**：`BiQuoteFact.next_workday`（迁移 `scripts/db/10_biquotefact_next_workday.sql`）。
+- **定义**：`quote_date` 之后第一个周一至周五，且不在 `Holiday`（`region='HK'`）中的日期。
+- **计算**：同步时 `agent/src/bi/workday.rs`；历史回填用日历 `generate_series` + 工作日集上的「下一交易日」映射（等价于按日 LEAD）。
+- **飞书**：台账 / 每日最高 / 推送表列名均为「下一工作日」；`ensure_otc_fields` 会自动补列。
 
 ### 2.5 仪表盘（图表）
 
@@ -170,21 +178,22 @@ cargo run -p agent --example bi_sync --features standalone -- verify
 
 ### 3.2 每日例行（推荐 Cron）
 
-平台侧邮件入库完成后执行：
-
 ```sh
 # 默认同步「库中最新报价日」
 python scripts/bi/daily_sync.py
 
-# 或指定日
-python scripts/bi/daily_sync.py 2026-10-07
-# 等价：BI_SYNC_DATE=2026-10-07 python scripts/bi/daily_sync.py
+# 指定日：若当日 DepositQuote 为空，会先跑 Outlook ingest 再 sync
+python scripts/bi/daily_sync.py 2026-10-27
+python scripts/bi/daily_sync.py 2026-10-27 --ingest   # 强制重扫 Inbox 再 sync
 ```
 
 脚本逻辑：
 
-1. 优先 `POST {AGENT_BI_URL}/catalog/refresh` → 必要时 `/migrate` → `/sync`
-2. Agent 未启动时 fallback：`cargo run -p agent --example bi_sync --features standalone -- daily`
+1. 指定日且库中无报价 → `run_ingest.py --date`（否则 BI sync 只能得到 `facts=0`）
+2. `POST {AGENT_BI_URL}/catalog/refresh` → 必要时 `/migrate` → `/sync`
+3. Agent 未启动时 fallback：`cargo run -p agent --example bi_sync --features standalone -- daily`
+
+> **注意**：`daily_sync` 只负责「库 → 飞书」。邮件漏入库时，以前单独跑 `daily_sync 某日` 会静默成功且 `facts=0`；现已自动补 ingest。
 
 可选环境变量：
 

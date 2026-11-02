@@ -9,7 +9,8 @@ register_on_logon: false
 store: fixed income
 folder: Inbox
 poll_seconds: 60.0
-catch_up_minutes: 30.0
+# Recent EntryID catch-up on start; daemon also always refresh_date(today).
+catch_up_minutes: 180.0
 no_events: true
 sync_bi: true
 bank: null

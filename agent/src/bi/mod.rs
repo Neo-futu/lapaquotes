@@ -26,6 +26,7 @@ pub mod http;
 pub mod models;
 pub mod service;
 pub mod store;
+pub mod workday;
 
 pub use error::BiError;
 pub use models::{BitableRole, QuoteFact, SyncJob, TableCatalog};

@@ -319,6 +319,7 @@ CREATE TABLE IF NOT EXISTS "BiQuoteFact" (
     "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "sync_key" TEXT NOT NULL,
     "quote_date" DATE NOT NULL,
+    "next_workday" DATE,
     "kind" TEXT NOT NULL,
     "institution_name" TEXT NOT NULL,
     "institution_cn_name" TEXT,
@@ -339,6 +340,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS "BiQuoteFact_sync_key_key" ON "BiQuoteFact"("s
 CREATE INDEX IF NOT EXISTS "BiQuoteFact_quote_date_idx" ON "BiQuoteFact"("quote_date");
 CREATE INDEX IF NOT EXISTS "BiQuoteFact_kind_date_idx" ON "BiQuoteFact"("kind", "quote_date");
 CREATE INDEX IF NOT EXISTS "BiQuoteFact_bitable_record_idx" ON "BiQuoteFact"("bitable_record_id");
+CREATE INDEX IF NOT EXISTS "BiQuoteFact_next_workday_idx" ON "BiQuoteFact"("next_workday");
 
 CREATE TABLE IF NOT EXISTS "BiSyncJob" (
     "id" TEXT NOT NULL PRIMARY KEY,

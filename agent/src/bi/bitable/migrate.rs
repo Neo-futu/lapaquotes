@@ -213,6 +213,15 @@ fn ledger_field_specs() -> Vec<FieldSpec> {
             }),
         },
         FieldSpec {
+            name: "下一工作日".into(),
+            body: json!({
+                "field_name": "下一工作日",
+                "type": 5,
+                "ui_type": "DateTime",
+                "property": { "date_formatter": "yyyy-MM-dd", "auto_fill": false }
+            }),
+        },
+        FieldSpec {
             name: "机构".into(),
             body: json!({ "field_name": "机构", "type": 1, "ui_type": "Text" }),
         },
@@ -302,6 +311,15 @@ fn digest_field_specs() -> Vec<FieldSpec> {
             name: "报价日".into(),
             body: json!({
                 "field_name": "报价日",
+                "type": 5,
+                "ui_type": "DateTime",
+                "property": { "date_formatter": "yyyy-MM-dd", "auto_fill": false }
+            }),
+        },
+        FieldSpec {
+            name: "下一工作日".into(),
+            body: json!({
+                "field_name": "下一工作日",
                 "type": 5,
                 "ui_type": "DateTime",
                 "property": { "date_formatter": "yyyy-MM-dd", "auto_fill": false }

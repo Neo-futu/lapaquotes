@@ -238,7 +238,7 @@ impl BiService {
 
         match &result {
             Ok(r) => {
-                let _ = self
+                if let Err(e) = self
                     .store
                     .jobs()
                     .finish_ok(
@@ -249,10 +249,15 @@ impl BiService {
                         r.facts as i32,
                         serde_json::to_value(r).unwrap_or(json!({})),
                     )
-                    .await;
+                    .await
+                {
+                    tracing::warn!(error = %e, job_id = %job, "finish_ok failed");
+                }
             }
             Err(e) => {
-                let _ = self.store.jobs().finish_err(&job, &e.to_string()).await;
+                if let Err(fe) = self.store.jobs().finish_err(&job, &e.to_string()).await {
+                    tracing::warn!(error = %fe, job_id = %job, "finish_err failed");
+                }
             }
         }
         result

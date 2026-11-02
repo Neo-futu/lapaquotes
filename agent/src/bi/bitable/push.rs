@@ -95,6 +95,9 @@ fn fact_to_ledger_fields(f: &QuoteFact) -> Value {
     let mut m = Map::new();
     m.insert("同步键".into(), json!(f.sync_key));
     m.insert("日期".into(), json!(date_to_ms(f.quote_date)));
+    if let Some(nwd) = f.next_workday {
+        m.insert("下一工作日".into(), json!(date_to_ms(nwd)));
+    }
     m.insert("机构".into(), json!(f.institution_name));
     if let Some(cn) = &f.institution_cn_name {
         if !cn.is_empty() {
@@ -147,6 +150,11 @@ pub async fn push_digest(
             .push(f);
     }
 
+    let next_workday_ms = facts
+        .first()
+        .and_then(|f| f.next_workday)
+        .map(date_to_ms);
+
     let mut desired: HashMap<String, Value> = HashMap::new();
     for ((inst, kind), rows) in &groups {
         let kind_label = if kind == "bond" { "债券" } else { "存款" };
@@ -174,31 +182,39 @@ pub async fn push_digest(
             })
             .collect::<Vec<_>>()
             .join("；");
-        desired.insert(
-            sync_key.clone(),
-            json!({
-                "同步键": sync_key,
-                "机构": inst,
-                "类型": kind_label,
-                "报价日": date_to_ms(date),
-                "条数": rows.len() as i64,
-                "摘要": summary,
-            }),
-        );
+        let mut fields = json!({
+            "同步键": sync_key,
+            "机构": inst,
+            "类型": kind_label,
+            "报价日": date_to_ms(date),
+            "条数": rows.len() as i64,
+            "摘要": summary,
+        });
+        if let Some(ms) = next_workday_ms {
+            fields
+                .as_object_mut()
+                .unwrap()
+                .insert("下一工作日".into(), json!(ms));
+        }
+        desired.insert(sync_key.clone(), fields);
     }
 
     let total_key = format!("G|{date}|__ALL__|all");
-    desired.insert(
-        total_key.clone(),
-        json!({
-            "同步键": total_key,
-            "机构": "全部",
-            "类型": "汇总",
-            "报价日": date_to_ms(date),
-            "条数": facts.len() as i64,
-            "摘要": format!("{date} 共 {} 条报价（存款/债券）", facts.len()),
-        }),
-    );
+    let mut total_fields = json!({
+        "同步键": total_key,
+        "机构": "全部",
+        "类型": "汇总",
+        "报价日": date_to_ms(date),
+        "条数": facts.len() as i64,
+        "摘要": format!("{date} 共 {} 条报价（存款/债券）", facts.len()),
+    });
+    if let Some(ms) = next_workday_ms {
+        total_fields
+            .as_object_mut()
+            .unwrap()
+            .insert("下一工作日".into(), json!(ms));
+    }
+    desired.insert(total_key.clone(), total_fields);
 
     let remote = client
         .search_by_sync_contains(table_id, &format!("|{date}|"))

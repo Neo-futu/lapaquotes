@@ -43,23 +43,25 @@ impl FactStore<'_> {
                     r#"
                     UPDATE "BiQuoteFact" SET
                         quote_date = $2,
-                        kind = $3,
-                        institution_name = $4,
-                        institution_cn_name = $5,
-                        term = $6,
-                        term_sort = $7,
-                        currency = $8,
-                        bond_code = $9,
-                        bond_name = $10,
-                        bid = $11,
-                        ask = $12,
-                        note = $13,
+                        next_workday = $3,
+                        kind = $4,
+                        institution_name = $5,
+                        institution_cn_name = $6,
+                        term = $7,
+                        term_sort = $8,
+                        currency = $9,
+                        bond_code = $10,
+                        bond_name = $11,
+                        bid = $12,
+                        ask = $13,
+                        note = $14,
                         updated_at = CURRENT_TIMESTAMP
                     WHERE id = $1
                     "#,
                     &[
                         &id,
                         &f.quote_date,
+                        &f.next_workday,
                         &f.kind,
                         &f.institution_name,
                         &f.institution_cn_name,
@@ -84,14 +86,16 @@ impl FactStore<'_> {
                 tx.execute(
                     r#"
                     INSERT INTO "BiQuoteFact" (
-                        id, sync_key, quote_date, kind, institution_name, institution_cn_name,
-                        term, term_sort, currency, bond_code, bond_name, bid, ask, note
-                    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+                        id, sync_key, quote_date, next_workday, kind, institution_name,
+                        institution_cn_name, term, term_sort, currency, bond_code, bond_name,
+                        bid, ask, note
+                    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
                     "#,
                     &[
                         &f.id,
                         &f.sync_key,
                         &f.quote_date,
+                        &f.next_workday,
                         &f.kind,
                         &f.institution_name,
                         &f.institution_cn_name,
@@ -123,9 +127,9 @@ impl FactStore<'_> {
         let rows = client
             .query(
                 r#"
-                SELECT id, sync_key, quote_date, kind, institution_name, institution_cn_name,
-                       term, term_sort, currency, bond_code, bond_name, bid, ask, note,
-                       bitable_table_id, bitable_record_id, pushed_at
+                SELECT id, sync_key, quote_date, next_workday, kind, institution_name,
+                       institution_cn_name, term, term_sort, currency, bond_code, bond_name,
+                       bid, ask, note, bitable_table_id, bitable_record_id, pushed_at
                 FROM "BiQuoteFact"
                 WHERE quote_date = $1
                 ORDER BY kind, institution_name, term_sort NULLS LAST, term NULLS LAST, bond_code NULLS LAST
@@ -162,29 +166,29 @@ impl FactStore<'_> {
             .await?;
         Ok(())
     }
-
 }
 
 fn row_to_fact(row: cornucopia::tokio_postgres::Row) -> QuoteFact {
-    let bid: Option<Decimal> = row.get(11);
-    let ask: Option<Decimal> = row.get(12);
+    let bid: Option<Decimal> = row.get(12);
+    let ask: Option<Decimal> = row.get(13);
     QuoteFact {
         id: row.get(0),
         sync_key: row.get(1),
         quote_date: row.get(2),
-        kind: row.get(3),
-        institution_name: row.get(4),
-        institution_cn_name: row.get(5),
-        term: row.get(6),
-        term_sort: row.get(7),
-        currency: row.get(8),
-        bond_code: row.get(9),
-        bond_name: row.get(10),
+        next_workday: row.get(3),
+        kind: row.get(4),
+        institution_name: row.get(5),
+        institution_cn_name: row.get(6),
+        term: row.get(7),
+        term_sort: row.get(8),
+        currency: row.get(9),
+        bond_code: row.get(10),
+        bond_name: row.get(11),
         bid: bid.and_then(|d| d.try_into().ok()),
         ask: ask.and_then(|d| d.try_into().ok()),
-        note: row.get(13),
-        bitable_table_id: row.get(14),
-        bitable_record_id: row.get(15),
-        pushed_at: row.get(16),
+        note: row.get(14),
+        bitable_table_id: row.get(15),
+        bitable_record_id: row.get(16),
+        pushed_at: row.get(17),
     }
 }

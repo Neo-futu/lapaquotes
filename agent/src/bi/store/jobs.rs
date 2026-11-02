@@ -49,6 +49,7 @@ impl JobStore<'_> {
             .get()
             .await
             .map_err(|e| BiError::Pool(e.to_string()))?;
+        let detail_txt = serde_json::to_string(&detail).unwrap_or_else(|_| "{}".into());
         client
             .execute(
                 r#"
@@ -68,10 +69,11 @@ impl JobStore<'_> {
                     &updated,
                     &deleted,
                     &facts,
-                    &serde_json::to_string(&detail).unwrap_or_else(|_| "{}".into()),
+                    &detail_txt,
                 ],
             )
-            .await?;
+            .await
+            .map_err(|e| BiError::Msg(format!("finish_ok job {id}: {e}")))?;
         Ok(())
     }
 
