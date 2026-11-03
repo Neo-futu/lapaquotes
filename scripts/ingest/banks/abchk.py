@@ -27,13 +27,14 @@ def parse(
 ):
     al = aliases(cfg)
     rows: list[DepositRow] = []
+    # Rates may be plain (`1.15`) or percent-suffixed (`1.15%`); columns are tab-separated.
     line_re = re.compile(
         r"(?P<t1>O/N|T/N|\d+\s*(?:Week|Weeks|month|months|year|years)?)"
-        r"\s+(?P<r1>[\d.]+)\s+"
+        r"\s+(?P<r1>[\d.]+)%?\s+"
         r"(?P<t2>O/N|T/N|\d+\s*(?:Week|Weeks|month|months|year|years)?)"
-        r"\s+(?P<r2>[\d.]+)\s+"
+        r"\s+(?P<r2>[\d.]+)%?\s+"
         r"(?P<t3>O/N|T/N|\d+\s*(?:Week|Weeks|month|months|year|years)?)"
-        r"\s+(?P<r3>[\d.]+)",
+        r"\s+(?P<r3>[\d.]+)%?",
         re.I,
     )
     currencies = ["CNY", "HKD", "USD"]
